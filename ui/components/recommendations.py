@@ -567,6 +567,55 @@ def render_recommendations_interface():
                                 }
                             )
 
+                            # Кнопки действий для каждого результата
+                            st.subheader("🔧 Действия с результатами")
+                            
+                            for i, (comp, similarity) in enumerate(results):
+                                with st.container():
+                                    col1, col2 = st.columns([3, 1])
+                                    
+                                    with col1:
+                                        st.markdown(f"**{comp.get('name', '—')}** (схожесть: {similarity:.1%})")
+                                    
+                                    with col2:
+                                        # Кнопка показать детали
+                                        if st.button(f"📋 Детали", key=f"details_{i}_{comp.get('id', i)}", use_container_width=True):
+                                            # Открываем диалог деталей
+                                            try:
+                                                from ..main import open_dialog_safely
+                                            except ImportError:
+                                                try:
+                                                    from main import open_dialog_safely
+                                                except ImportError:
+                                                    # Fallback функция
+                                                    def open_dialog_safely(dialog_type: str, entity: Dict[str, Any]):
+                                                        st.session_state[f"show_{dialog_type}_details"] = True
+                                                        st.session_state[f"selected_{dialog_type}"] = entity
+                                                    
+                                            # Определяем тип соединения
+                                            if selected_db == "metabolites":
+                                                open_dialog_safely("metabolite", comp)
+                                            elif selected_db == "enzymes":
+                                                open_dialog_safely("enzyme", comp)
+                                            elif selected_db == "proteins":
+                                                open_dialog_safely("protein", comp)
+                                            elif selected_db == "carbohydrates":
+                                                open_dialog_safely("carbohydrate", comp)
+                                            elif selected_db == "lipids":
+                                                open_dialog_safely("lipid", comp)
+                                        
+                                        # Кнопка добавить к сравнению
+                                        if st.button(f"⚖️ Сравнить", key=f"compare_{i}_{comp.get('id', i)}", use_container_width=True):
+                                            try:
+                                                from .comparison import add_to_comparison_button, comparison_comparator
+                                                # Добавляем к сравнению
+                                                add_to_comparison_button(comp, selected_db, comparison_comparator)
+                                                st.success(f"✅ {comp.get('name', 'Соединение')} добавлено к сравнению")
+                                            except Exception as e:
+                                                st.error(f"Ошибка добавления к сравнению: {e}")
+                                    
+                                    st.divider()
+
                             # Диаграмма схожести
                             st.subheader("📊 Визуализация схожести")
 
@@ -593,6 +642,17 @@ def render_recommendations_interface():
                                 )
 
                                 st.plotly_chart(fig, width='stretch')
+                                
+                                # Кнопка экспорта результатов
+                                st.subheader("💾 Экспорт результатов")
+                                csv_data = df.to_csv(index=False, encoding='utf-8')
+                                st.download_button(
+                                    label="📥 Скачать результаты (CSV)",
+                                    data=csv_data,
+                                    file_name=f"recommendations_{selected_db}_{target.get('name', 'compound')}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True
+                                )
 
                     # Кластеризация
                     st.divider()
@@ -609,6 +669,31 @@ def render_recommendations_interface():
 
                                 # Отображение кластеров
                                 clusters = cluster_results['clusters']
+                                
+                                # Подготовка данных для экспорта
+                                export_data = []
+                                for cluster_id, cluster_compounds in clusters.items():
+                                    for comp in cluster_compounds:
+                                        export_data.append({
+                                            "Кластер": f"Кластер {cluster_id + 1}",
+                                            "Название": comp.get('name', '—'),
+                                            "Формула": comp.get('formula', '—'),
+                                            "Масса": comp.get('exact_mass', '—'),
+                                            "Тип": database_options[selected_db]
+                                        })
+
+                                # Кнопка экспорта кластеров
+                                if export_data:
+                                    st.subheader("💾 Экспорт кластеров")
+                                    export_df = pd.DataFrame(export_data)
+                                    csv_cluster_data = export_df.to_csv(index=False, encoding='utf-8')
+                                    st.download_button(
+                                        label="📥 Скачать кластеры (CSV)",
+                                        data=csv_cluster_data,
+                                        file_name=f"clusters_{selected_db}_{n_clusters}_clusters.csv",
+                                        mime="text/csv",
+                                        use_container_width=True
+                                    )
 
                                 for cluster_id, cluster_compounds in clusters.items():
                                     with st.expander(f"Кластер {cluster_id + 1} ({len(cluster_compounds)} соединений)"):
@@ -623,6 +708,55 @@ def render_recommendations_interface():
                                         if cluster_data:
                                             cluster_df = pd.DataFrame(cluster_data)
                                             st.dataframe(cluster_df, width='stretch', hide_index=True)
+                                            
+                                            # Кнопки действий для соединений в кластере
+                                            st.subheader("🔧 Действия с соединениями кластера")
+                                            
+                                            for i, comp in enumerate(cluster_compounds[:10]):
+                                                with st.container():
+                                                    col1, col2 = st.columns([3, 1])
+                                                    
+                                                    with col1:
+                                                        st.markdown(f"**{comp.get('name', '—')}**")
+                                                    
+                                                    with col2:
+                                                        # Кнопка показать детали
+                                                        if st.button(f"📋 Детали", key=f"cluster_details_{cluster_id}_{i}_{comp.get('id', i)}", use_container_width=True):
+                                                            # Открываем диалог деталей
+                                                            try:
+                                                                from ..main import open_dialog_safely
+                                                            except ImportError:
+                                                                try:
+                                                                    from main import open_dialog_safely
+                                                                except ImportError:
+                                                                    # Fallback функция
+                                                                    def open_dialog_safely(dialog_type: str, entity: Dict[str, Any]):
+                                                                        st.session_state[f"show_{dialog_type}_details"] = True
+                                                                        st.session_state[f"selected_{dialog_type}"] = entity
+                                                                    
+                                                            # Определяем тип соединения
+                                                            if selected_db == "metabolites":
+                                                                open_dialog_safely("metabolite", comp)
+                                                            elif selected_db == "enzymes":
+                                                                open_dialog_safely("enzyme", comp)
+                                                            elif selected_db == "proteins":
+                                                                open_dialog_safely("protein", comp)
+                                                            elif selected_db == "carbohydrates":
+                                                                open_dialog_safely("carbohydrate", comp)
+                                                            elif selected_db == "lipids":
+                                                                open_dialog_safely("lipid", comp)
+                                                            
+                                                        # Кнопка добавить к сравнению
+                                                        if st.button(f"⚖️ Сравнить", key=f"cluster_compare_{cluster_id}_{i}_{comp.get('id', i)}", use_container_width=True):
+                                                            try:
+                                                                from .comparison import add_to_comparison_button, comparison_comparator
+                                                                # Добавляем к сравнению
+                                                                add_to_comparison_button(comp, selected_db, comparison_comparator)
+                                                                st.success(f"✅ {comp.get('name', 'Соединение')} добавлено к сравнению")
+                                                            except Exception as e:
+                                                                st.error(f"Ошибка добавления к сравнению: {e}")
+                                                    
+                                                    st.divider()
 
                             else:
                                 st.error(f"❌ Ошибка кластеризации: {cluster_results['error']}")
