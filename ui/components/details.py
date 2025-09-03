@@ -18,10 +18,25 @@ EXTERNAL_LINKS = {
     "ncbi_gene_base": "https://www.ncbi.nlm.nih.gov/gene/?term=",
     "expasy_base": "https://enzyme.expasy.org/EC/",
 }
-from .utils import (
-    get_display_name, safe_get_value, format_mass, format_chemical_formula,
-    create_external_links, create_metric_html
-)
+# Импорт вспомогательных функций
+try:
+    # Try absolute import first
+    from components.utils import (
+        get_display_name, safe_get_value, format_mass, format_chemical_formula,
+        create_external_links, create_metric_html
+    )
+except ImportError:
+    # Fallback to relative import
+    try:
+        from .utils import (
+            get_display_name, safe_get_value, format_mass, format_chemical_formula,
+            create_external_links, create_metric_html
+        )
+    except ImportError:
+        from utils import (
+            get_display_name, safe_get_value, format_mass, format_chemical_formula,
+            create_external_links, create_metric_html
+        )
 
 # Улучшенные адаптивные стили для модальных окон
 modal_styles = """

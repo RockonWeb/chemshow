@@ -353,7 +353,7 @@ def create_3d_visualization_alternative(pdb_data: str, width: int = 600, height:
             '                    viewer.clear();',
             '                    viewer.addModel(pdbData, \'mol\');',
             '                    console.log(\'Tried alternative mol format\');',
-            '                }'',
+            '                }',
             '                viewer.setStyle({\'stick\': {\'colorscheme\': \'Jmol\'}});',
             '                viewer.zoomTo();',
             '                viewer.render();',

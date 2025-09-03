@@ -33,7 +33,16 @@ SEARCH_PRESETS = {
     "formaldehyde": "Formaldehyde",
     "atp": "ATP",
 }
-from .utils import validate_search_params
+# Импорт вспомогательных функций
+try:
+    # Try absolute import first
+    from components.utils import validate_search_params
+except ImportError:
+    # Fallback to relative import
+    try:
+        from .utils import validate_search_params
+    except ImportError:
+        from utils import validate_search_params
 
 
 def render_search_form() -> Dict[str, Any]:
