@@ -48,8 +48,8 @@ from components.details import (
     show_lipid_details
 )
 from components.visualization_3d import (
-    render_3d_structure, display_molecule_properties,
-    check_dependencies, install_instructions, dependency_errors
+    render_3d_structure,
+    check_dependencies, install_instructions, 
 )
 
 # Настройка логирования
