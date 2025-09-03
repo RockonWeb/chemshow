@@ -6,11 +6,17 @@ from typing import Dict, Any, Optional, List
 import sys
 from pathlib import Path
 
-# Добавляем путь к config для корректных импортов
-config_dir = Path(__file__).parent.parent / "config"
-sys.path.insert(0, str(config_dir))
-
-from config.settings import EXTERNAL_LINKS
+# Внешние ссылки для различных баз данных
+EXTERNAL_LINKS = {
+    "hmdb_base": "https://hmdb.ca/metabolites/",
+    "kegg_base": "https://www.kegg.jp/entry/",
+    "chebi_base": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+    "pubchem_base": "https://pubchem.ncbi.nlm.nih.gov/compound/",
+    "uniprot_base": "https://www.uniprot.org/uniprot/",
+    "pdb_base": "https://www.rcsb.org/structure/",
+    "ncbi_gene_base": "https://www.ncbi.nlm.nih.gov/gene/?term=",
+    "expasy_base": "https://enzyme.expasy.org/EC/",
+}
 
 
 def truncate_description(text: str, max_words: int = 6) -> str:
@@ -180,12 +186,15 @@ def format_search_query(query: str) -> Optional[str]:
 def validate_search_params(query: Optional[str] = None, mass: Optional[float] = None,
                           tolerance_ppm: int = 1000) -> Dict[str, Any]:
     """Валидирует параметры поиска"""
-    # Импортируем SEARCH_CONFIG локально для избежания циклических импортов
-    import sys
-    from pathlib import Path
-    config_dir = Path(__file__).parent.parent / "config"
-    sys.path.insert(0, str(config_dir))
-    from config.settings import SEARCH_CONFIG
+    # Конфигурация поиска
+    SEARCH_CONFIG = {
+        "default_page_size": 50,
+        "max_page_size": 200,
+        "min_page_size": 25,
+        "default_tolerance_ppm": 1000,
+        "max_tolerance_ppm": 10000,
+        "min_tolerance_ppm": 250,
+    }
 
     errors = []
     warnings = []

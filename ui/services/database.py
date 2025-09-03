@@ -9,11 +9,14 @@ from typing import Dict, List, Any, Optional, Generator
 import sys
 from pathlib import Path
 
-# Добавляем путь к config для корректных импортов
-config_dir = Path(__file__).parent.parent / "config"
-sys.path.insert(0, str(config_dir))
-
-from config.settings import DATABASE_PATHS
+# Пути к базам данных
+DATABASE_PATHS = {
+    "metabolites": "data/metabolites.db",
+    "enzymes": "data/enzymes.db",
+    "proteins": "data/proteins.db",
+    "carbohydrates": "data/carbohydrates.db",
+    "lipids": "data/lipids.db",
+}
 
 # Импортируем кэш-менеджер
 try:

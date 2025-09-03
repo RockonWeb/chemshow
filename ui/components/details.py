@@ -7,10 +7,17 @@ import sys
 from pathlib import Path
 
 # Добавляем путь к config для корректных импортов
-config_dir = Path(__file__).parent.parent / "config"
-sys.path.insert(0, str(config_dir))
-
-from config.settings import EXTERNAL_LINKS
+# Внешние ссылки для различных баз данных
+EXTERNAL_LINKS = {
+    "hmdb_base": "https://hmdb.ca/metabolites/",
+    "kegg_base": "https://www.kegg.jp/entry/",
+    "chebi_base": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+    "pubchem_base": "https://pubchem.ncbi.nlm.nih.gov/compound/",
+    "uniprot_base": "https://www.uniprot.org/uniprot/",
+    "pdb_base": "https://www.rcsb.org/structure/",
+    "ncbi_gene_base": "https://www.ncbi.nlm.nih.gov/gene/?term=",
+    "expasy_base": "https://enzyme.expasy.org/EC/",
+}
 from .utils import (
     get_display_name, safe_get_value, format_mass, format_chemical_formula,
     create_external_links, create_metric_html

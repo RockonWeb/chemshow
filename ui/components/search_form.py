@@ -7,12 +7,32 @@ import sys
 from pathlib import Path
 
 # Добавляем путь к config для корректных импортов
-config_dir = Path(__file__).parent.parent / "config"
-sys.path.insert(0, str(config_dir))
+# Конфигурация поиска
+SEARCH_CONFIG = {
+    "default_page_size": 50,
+    "max_page_size": 200,
+    "min_page_size": 25,
+    "default_tolerance_ppm": 1000,
+    "max_tolerance_ppm": 10000,
+    "min_tolerance_ppm": 250,
+}
 
-from config.settings import (
-    SEARCH_CONFIG, ORGANISM_TYPES, SEARCH_PRESETS
-)
+# Типы организмов
+ORGANISM_TYPES = [
+    "Все",
+    "plant",
+    "animal",
+    "microorganism",
+    "universal"
+]
+
+# Пресеты поиска
+SEARCH_PRESETS = {
+    "glucose": "Глюкоза",
+    "dehydrogenase": "Dehydrogenase",
+    "formaldehyde": "Formaldehyde",
+    "atp": "ATP",
+}
 from .utils import validate_search_params
 
 
