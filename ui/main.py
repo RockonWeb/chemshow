@@ -54,7 +54,7 @@ from components.details import (
 )
 from components.visualization_3d import (
     render_3d_structure, display_molecule_properties,
-    check_dependencies, install_instructions
+    check_dependencies, install_instructions, dependency_errors
 )
 
 # Настройка логирования
@@ -453,6 +453,19 @@ def main():
     # Инициализация
     initialize_session_state()
     inject_styles()
+
+    with st.expander("🧪 Диагностика среды"):
+        import sys, import importlib.metadata as im
+        st.write("Python:", sys.version)
+        st.write("Exec:", sys.executable)
+        try:
+            st.write("rdkit version:", im.version("rdkit"))
+        except Exception as e:
+            st.write("rdkit:", repr(e))
+        try:
+            st.write("py3Dmol version:", im.version("py3dmol"))
+        except Exception as e:
+            st.write("py3Dmol:", repr(e))
 
     # Проверка зависимостей для 3D-визуализации
     vis_deps = check_dependencies()

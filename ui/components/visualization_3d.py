@@ -27,8 +27,8 @@ except ImportError:
 try:
     import py3Dmol
     PY3DMOL_AVAILABLE = True
-except ImportError:
-    logger.warning("Py3Dmol не установлен. 3D-визуализация недоступна.")
+except ImportError as e:
+    logger.warning(f"Py3Dmol не установлен. 3D-визуализация недоступна. {e}")
     PY3DMOL_AVAILABLE = False
     py3Dmol = None
 
