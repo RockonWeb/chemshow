@@ -16,9 +16,18 @@ logger = logging.getLogger(__name__)
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem, Draw
-    RDKIT_AVAILABLE = True
-except ImportError:
-    logger.warning("rdkit не установлен. 3D-визуализация будет ограничена.")
+    # Проверяем, что импорт действительно работает
+    test_mol = Chem.MolFromSmiles("C")
+    if test_mol is not None:
+        RDKIT_AVAILABLE = True
+        logger.info("rdkit успешно импортирован и работает")
+    else:
+        RDKIT_AVAILABLE = False
+        logger.warning("rdkit импортирован, но не работает корректно")
+        Chem = None
+        AllChem = None
+except ImportError as e:
+    logger.warning(f"rdkit не установлен. 3D-визуализация будет ограничена. Ошибка: {e}")
     RDKIT_AVAILABLE = False
     Chem = None
     AllChem = None
