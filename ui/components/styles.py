@@ -63,7 +63,8 @@ BASE_STYLES = """
     box-shadow: var(--shadow-1);
     padding: 1.125rem 1.125rem 1rem 1.125rem;
     margin-bottom: 0.875rem;
-    height: 200px;
+    min-height: 180px;
+    height: auto;
     display: flex;
     flex-direction: column;
     transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1), 
@@ -87,11 +88,8 @@ BASE_STYLES = """
     overflow-wrap: break-word;
     hyphens: auto;
     line-height: 1.3;
-    max-height: 4.5em;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+    height: auto;
+    overflow: visible;
 }
 
 .card-subtitle {
@@ -103,10 +101,10 @@ BASE_STYLES = """
     line-height: 1.5;
     white-space: pre-line;
     flex-grow: 1;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
+    height: auto;
+    overflow: visible;
+    text-overflow: ellipsis;
+    display: block;
 }
 
 .row-divider { height: 8px; }
@@ -117,6 +115,8 @@ BASE_STYLES = """
     font-size: 14px;
     color: #fff;
     transition: color .2s ease, opacity .2s ease;
+    display: inline-block;
+    margin: 2px 0;
 }
 .ext-link a:hover { text-decoration: underline; color: var(--primary-600); }
 
@@ -135,6 +135,10 @@ BASE_STYLES = """
     letter-spacing: 0.3px;
     transition: all 0.2s ease;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
 }
 
 .pill:hover {
@@ -474,23 +478,22 @@ BASE_STYLES = """
     
     /* Карточки на мобильных */
     .card { 
-        padding: 12px; 
+        padding: 16px; 
         height: auto; 
         min-height: 160px;
-        margin-bottom: 12px;
     }
     
     .card-title { 
-        font-size: 15px;
-        line-height: 1.25;
-        -webkit-line-clamp: 2;
-        max-height: 2.5em;
+        font-size: 17px;
+        line-height: 1.2;
+        height: auto;
+        overflow: visible;
     }
     
     .card-subtitle {
-        font-size: 12px;
-        -webkit-line-clamp: 3;
-        line-height: 1.4;
+        height: auto;
+        overflow: visible;
+        font-size: 13px;
     }
     
     /* 3D визуализация на мобильных */

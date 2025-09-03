@@ -19,7 +19,7 @@ EXTERNAL_LINKS = {
 }
 
 
-def truncate_description(text: str, max_words: int = 6) -> str:
+def truncate_description(text: str, max_words: int = 12) -> str:
     """Обрезает описание до указанного количества слов"""
     if not text or text == 'None':
         return text

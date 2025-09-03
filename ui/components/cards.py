@@ -85,14 +85,11 @@ def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
     )
 
     # Кнопки действий
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Используем безопасную функцию открытия диалога
-            open_dialog_safely("metabolite", metabolite)
-
-    with col2:
-        add_to_comparison_button(metabolite, "metabolites", comparison_comparator)
+    if st.button("📋 Показать детали", key=card_key, width='stretch'):
+        # Используем безопасную функцию открытия диалога
+        open_dialog_safely("metabolite", metabolite)
+    
+    add_to_comparison_button(metabolite, "metabolites", comparison_comparator)
 
 
 def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
@@ -134,14 +131,11 @@ def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
     )
 
     # Кнопки действий
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Используем безопасную функцию открытия диалога
-            open_dialog_safely("enzyme", enzyme)
-
-    with col2:
-        add_to_comparison_button(enzyme, "enzymes", comparison_comparator)
+    if st.button("📋 Показать детали", key=card_key, width='stretch'):
+        # Используем безопасную функцию открытия диалога
+        open_dialog_safely("enzyme", enzyme)
+    
+    add_to_comparison_button(enzyme, "enzymes", comparison_comparator)
 
 
 def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
@@ -184,14 +178,11 @@ def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
     )
 
     # Кнопки действий
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Используем безопасную функцию открытия диалога
-            open_dialog_safely("protein", protein)
-
-    with col2:
-        add_to_comparison_button(protein, "proteins", comparison_comparator)
+    if st.button("📋 Показать детали", key=card_key, width='stretch'):
+        # Используем безопасную функцию открытия диалога
+        open_dialog_safely("protein", protein)
+    
+    add_to_comparison_button(protein, "proteins", comparison_comparator)
 
 
 def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> None:
@@ -222,14 +213,11 @@ def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> Non
     )
 
     # Кнопки действий
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Используем безопасную функцию открытия диалога
-            open_dialog_safely("carbohydrate", carbohydrate)
-
-    with col2:
-        add_to_comparison_button(carbohydrate, "carbohydrates", comparison_comparator)
+    if st.button("📋 Показать детали", key=card_key, width='stretch'):
+        # Используем безопасную функцию открытия диалога
+        open_dialog_safely("carbohydrate", carbohydrate)
+    
+    add_to_comparison_button(carbohydrate, "carbohydrates", comparison_comparator)
 
 
 def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
@@ -260,11 +248,8 @@ def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
     )
 
     # Кнопки действий
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Используем безопасную функцию открытия диалога
-            open_dialog_safely("lipid", lipid)
-
-    with col2:
-        add_to_comparison_button(lipid, "lipids", comparison_comparator)
+    if st.button("📋 Показать детали", key=card_key, width='stretch'):
+        # Используем безопасную функцию открытия диалога
+        open_dialog_safely("lipid", lipid)
+    
+    add_to_comparison_button(lipid, "lipids", comparison_comparator)
