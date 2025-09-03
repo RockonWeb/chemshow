@@ -269,35 +269,6 @@ BASE_STYLES = """
     scroll-margin: 0 !important;
 }
 
-/* JavaScript для предотвращения прокрутки */
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Предотвращаем прокрутку при нажатии на кнопки
-    document.addEventListener('click', function(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.closest('.stButton')) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Сохраняем текущую позицию прокрутки
-            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Небольшая задержка для предотвращения прокрутки
-            setTimeout(() => {
-                window.scrollTo(0, currentScroll);
-            }, 10);
-        }
-    }, true);
-    
-    // Предотвращаем прокрутку при фокусе на кнопках
-    document.addEventListener('focusin', function(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.closest('.stButton')) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    }, true);
-});
-</script>
-
 /* Предотвращение прокрутки на уровне HTML и body */
 html, body {
     scroll-behavior: auto !important;
@@ -309,6 +280,47 @@ html, body {
 [data-testid="stAppViewContainer"],
 [data-testid="stSidebar"],
 [data-testid="main"] {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Дополнительные стили для предотвращения прокрутки */
+.stButton > button:focus-visible {
+    outline: none !important;
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки для всех форм */
+.stForm {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки для результатов поиска */
+.results-container {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки при навигации клавиатурой */
+.stButton > button:focus-within {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки для всех интерактивных элементов */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+    scroll-padding: 0 !important;
+}
+
+/* Предотвращение прокрутки для модальных окон */
+.stModal {
     scroll-behavior: auto !important;
     scroll-margin: 0 !important;
 }
