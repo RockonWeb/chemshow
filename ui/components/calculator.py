@@ -186,29 +186,29 @@ class MolecularCalculator:
         if "error" in properties:
             return pd.DataFrame({"Свойство": ["Ошибка"], "Значение": [str(properties["error"])]})
 
-        # Группировка свойств
+        # Группировка свойств с конвертацией в строки
         basic_props = {
-            "Формула": properties.get("formula", "—"),
+            "Формула": str(properties.get("formula", "—")),
             "Молекулярная масса": f"{properties.get('molecular_weight', '—')} Da",
             "Точная масса": f"{properties.get('exact_mass', '—')} Da",
-            "Количество атомов": properties.get("atom_count", "—"),
-            "Количество тяжелых атомов": properties.get("heavy_atom_count", "—"),
-            "Количество связей": properties.get("bond_count", "—"),
-            "Количество колец": properties.get("ring_count", "—"),
-            "Ароматических колец": properties.get("aromatic_rings", "—"),
+            "Количество атомов": str(properties.get("atom_count", "—")),
+            "Количество тяжелых атомов": str(properties.get("heavy_atom_count", "—")),
+            "Количество связей": str(properties.get("bond_count", "—")),
+            "Количество колец": str(properties.get("ring_count", "—")),
+            "Ароматических колец": str(properties.get("aromatic_rings", "—")),
         }
 
         physchem_props = {
-            "LogP": properties.get("logp", "—"),
+            "LogP": str(properties.get("logp", "—")),
             "TPSA": f"{properties.get('tpsa', '—')} Å²",
-            "Вращаемых связей": properties.get("rotatable_bonds", "—"),
-            "Доноров водородных связей": properties.get("h_bond_donors", "—"),
-            "Акцепторов водородных связей": properties.get("h_bond_acceptors", "—"),
-            "Растворимость": properties.get("solubility", "—"),
+            "Вращаемых связей": str(properties.get("rotatable_bonds", "—")),
+            "Доноров водородных связей": str(properties.get("h_bond_donors", "—")),
+            "Акцепторов водородных связей": str(properties.get("h_bond_acceptors", "—")),
+            "Растворимость": str(properties.get("solubility", "—")),
         }
 
         advanced_props = {
-            "Оценка токсичности": properties.get("toxicity_estimate", "—"),
+            "Оценка токсичности": str(properties.get("toxicity_estimate", "—")),
         }
 
         # Объединяем все свойства

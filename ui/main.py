@@ -282,7 +282,7 @@ def display_entity_table(entities: list, entity_type: str):
             rows.append({
                 "Название": entity.get("name_ru", "") or entity.get("name", ""),
                 "Формула": entity.get("formula", ""),
-                "Масса": float(entity["exact_mass"]) if entity.get("exact_mass") else None,
+                "Масса": f"{float(entity['exact_mass']):.2f}" if entity.get("exact_mass") else "—",
                 "Класс": entity.get("class_name", ""),
             })
         elif entity_type == "enzymes":
