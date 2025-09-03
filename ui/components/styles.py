@@ -209,15 +209,108 @@ BASE_STYLES = """
                 box-shadow .2s cubic-bezier(0.4, 0, 0.2, 1), 
                 filter .2s ease !important;
     letter-spacing: 0.025em !important;
+    scroll-behavior: auto !important;
 }
+
+/* Предотвращение автоматической прокрутки при нажатии на кнопки */
+.stButton > button:focus {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки для всех интерактивных элементов */
+.stButton > button,
+.stButton > button:active,
+.stButton > button:focus,
+.stButton > button:hover {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+    scroll-padding: 0 !important;
+}
+
 .stButton > button:hover {
     box-shadow: var(--shadow-2) !important;
     filter: brightness(1.05) !important;
     border-color: var(--border-light) !important;
 }
+
 .stButton > button:active { 
     transform: translateY(0) scale(1) !important; 
     box-shadow: var(--shadow-1) !important;
+}
+
+/* Дополнительные стили для предотвращения прокрутки */
+.stButton {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки для основного контейнера */
+.main .block-container {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* Предотвращение прокрутки для всех интерактивных элементов */
+[data-testid="stButton"],
+[data-testid="stButton"] > button,
+.stButton,
+.stButton > button {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+    scroll-padding: 0 !important;
+}
+
+/* Предотвращение прокрутки для форм и инпутов */
+.stTextInput > div > div > input,
+.stSelectbox > div > div > div,
+.stMultiselect > div > div > div {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+}
+
+/* JavaScript для предотвращения прокрутки */
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Предотвращаем прокрутку при нажатии на кнопки
+    document.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('.stButton')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Сохраняем текущую позицию прокрутки
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Небольшая задержка для предотвращения прокрутки
+            setTimeout(() => {
+                window.scrollTo(0, currentScroll);
+            }, 10);
+        }
+    }, true);
+    
+    // Предотвращаем прокрутку при фокусе на кнопках
+    document.addEventListener('focusin', function(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('.stButton')) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+});
+</script>
+
+/* Предотвращение прокрутки на уровне HTML и body */
+html, body {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
+    scroll-padding: 0 !important;
+}
+
+/* Предотвращение прокрутки для Streamlit элементов */
+[data-testid="stAppViewContainer"],
+[data-testid="stSidebar"],
+[data-testid="main"] {
+    scroll-behavior: auto !important;
+    scroll-margin: 0 !important;
 }
 
 /* Кнопки в модальных окнах - одинаковый размер */
