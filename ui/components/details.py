@@ -324,15 +324,12 @@ def show_metabolite_details(metabolite: Dict[str, Any]) -> None:
 
     with col3:
         if st.button("❌ Закрыть", key="close_metabolite_modal", type="primary"):
-            # Импортируем функцию безопасного закрытия диалогов
-            import sys
-            from pathlib import Path
-            main_dir = Path(__file__).parent.parent
-            sys.path.insert(0, str(main_dir))
-            from main_refactored import close_all_dialogs
-            
-            close_all_dialogs()
-            st.rerun()
+            # Закрываем все диалоги
+            st.session_state.show_metabolite_details = False
+            st.session_state.show_enzyme_details = False
+            st.session_state.show_protein_details = False
+            st.session_state.show_carbohydrate_details = False
+            st.session_state.show_lipid_details = False
 
 
 @st.dialog("🧬 Детали фермента")
@@ -412,15 +409,12 @@ EC номер: {ec_number}
 
     with col3:
         if st.button("❌ Закрыть", key="close_enzyme_modal", type="primary"):
-            # Импортируем функцию безопасного закрытия диалогов
-            import sys
-            from pathlib import Path
-            main_dir = Path(__file__).parent.parent
-            sys.path.insert(0, str(main_dir))
-            from main_refactored import close_all_dialogs
-            
-            close_all_dialogs()
-            st.rerun()
+            # Закрываем все диалоги
+            st.session_state.show_metabolite_details = False
+            st.session_state.show_enzyme_details = False
+            st.session_state.show_protein_details = False
+            st.session_state.show_carbohydrate_details = False
+            st.session_state.show_lipid_details = False
 
 
 @st.dialog("🧬 Детали белка")
@@ -490,15 +484,12 @@ def show_protein_details(protein: Dict[str, Any]) -> None:
 
     with col3:
         if st.button("❌ Закрыть", key="close_protein_modal", type="primary"):
-            # Импортируем функцию безопасного закрытия диалогов
-            import sys
-            from pathlib import Path
-            main_dir = Path(__file__).parent.parent
-            sys.path.insert(0, str(main_dir))
-            from main_refactored import close_all_dialogs
-            
-            close_all_dialogs()
-            st.rerun()
+            # Закрываем все диалоги
+            st.session_state.show_metabolite_details = False
+            st.session_state.show_enzyme_details = False
+            st.session_state.show_protein_details = False
+            st.session_state.show_carbohydrate_details = False
+            st.session_state.show_lipid_details = False
 
 
 @st.dialog("🧬 Детали углевода")
@@ -560,15 +551,12 @@ def show_carbohydrate_details(carbohydrate: Dict[str, Any]) -> None:
 
     with col3:
         if st.button("❌ Закрыть", key="close_carbohydrate_modal", type="primary", use_container_width=True):
-            # Импортируем функцию безопасного закрытия диалогов
-            import sys
-            from pathlib import Path
-            main_dir = Path(__file__).parent.parent
-            sys.path.insert(0, str(main_dir))
-            from main_refactored import close_all_dialogs
-            
-            close_all_dialogs()
-            st.rerun()
+            # Закрываем все диалоги
+            st.session_state.show_metabolite_details = False
+            st.session_state.show_enzyme_details = False
+            st.session_state.show_protein_details = False
+            st.session_state.show_carbohydrate_details = False
+            st.session_state.show_lipid_details = False
 
 
 @st.dialog("🧬 Детали липида")
@@ -631,12 +619,9 @@ def show_lipid_details(lipid: Dict[str, Any]) -> None:
 
     with col3:
         if st.button("❌ Закрыть", key="close_lipid_modal", type="primary", use_container_width=True):
-            # Импортируем функцию безопасного закрытия диалогов
-            import sys
-            from pathlib import Path
-            main_dir = Path(__file__).parent.parent
-            sys.path.insert(0, str(main_dir))
-            from main_refactored import close_all_dialogs
-            
-            close_all_dialogs()
-            st.rerun()
+            # Закрываем все диалоги
+            st.session_state.show_metabolite_details = False
+            st.session_state.show_enzyme_details = False
+            st.session_state.show_protein_details = False
+            st.session_state.show_carbohydrate_details = False
+            st.session_state.show_lipid_details = False

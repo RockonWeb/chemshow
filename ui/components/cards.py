@@ -47,15 +47,9 @@ def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
 
     # Кнопка для открытия деталей
     if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Импортируем функцию безопасного открытия диалога
-        import sys
-        from pathlib import Path
-        main_dir = Path(__file__).parent.parent
-        sys.path.insert(0, str(main_dir))
-        from main_refactored import open_dialog_safely
-        
-        open_dialog_safely("metabolite", metabolite)
-        st.rerun()
+        # Открываем детали метаболита
+        st.session_state.show_metabolite_details = True
+        st.session_state.selected_metabolite = metabolite
 
 
 def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
@@ -98,15 +92,9 @@ def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
 
     # Кнопка для открытия деталей
     if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Импортируем функцию безопасного открытия диалога
-        import sys
-        from pathlib import Path
-        main_dir = Path(__file__).parent.parent
-        sys.path.insert(0, str(main_dir))
-        from main_refactored import open_dialog_safely
-        
-        open_dialog_safely("enzyme", enzyme)
-        st.rerun()
+        # Открываем детали фермента
+        st.session_state.show_enzyme_details = True
+        st.session_state.selected_enzyme = enzyme
 
 
 def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
@@ -150,15 +138,9 @@ def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
 
     # Кнопка для открытия деталей
     if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Импортируем функцию безопасного открытия диалога
-        import sys
-        from pathlib import Path
-        main_dir = Path(__file__).parent.parent
-        sys.path.insert(0, str(main_dir))
-        from main_refactored import open_dialog_safely
-        
-        open_dialog_safely("protein", protein)
-        st.rerun()
+        # Открываем детали белка
+        st.session_state.show_protein_details = True
+        st.session_state.selected_protein = protein
 
 
 def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> None:
@@ -190,15 +172,9 @@ def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> Non
 
     # Кнопка для открытия деталей
     if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Импортируем функцию безопасного открытия диалога
-        import sys
-        from pathlib import Path
-        main_dir = Path(__file__).parent.parent
-        sys.path.insert(0, str(main_dir))
-        from main_refactored import open_dialog_safely
-        
-        open_dialog_safely("carbohydrate", carbohydrate)
-        st.rerun()
+        # Открываем детали углевода
+        st.session_state.show_carbohydrate_details = True
+        st.session_state.selected_carbohydrate = carbohydrate
 
 
 def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
@@ -230,12 +206,6 @@ def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
 
     # Кнопка для открытия деталей
     if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Импортируем функцию безопасного открытия диалога
-        import sys
-        from pathlib import Path
-        main_dir = Path(__file__).parent.parent
-        sys.path.insert(0, str(main_dir))
-        from main_refactored import open_dialog_safely
-        
-        open_dialog_safely("lipid", lipid)
-        st.rerun()
+        # Открываем детали липида
+        st.session_state.show_lipid_details = True
+        st.session_state.selected_lipid = lipid

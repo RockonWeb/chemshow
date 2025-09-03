@@ -12,7 +12,7 @@ alembic==1.13.1
 aiosqlite==0.19.0
 
 # Chemistry and metabolomics
-rdkit==2023.9.1
+rdkit==2024.9.1
 # Alternative: openbabel-wheel==3.1.1.19
 
 # Data processing
