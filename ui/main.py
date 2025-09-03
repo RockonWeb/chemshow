@@ -52,7 +52,7 @@ from components.visualization_3d import (
     check_dependencies, install_instructions,
     render_advanced_visualization_interface,
 )
-from components.comparison import render_comparison_interface
+from components.comparison import render_comparison_interface, comparison_comparator
 from components.calculator import render_calculator_interface
 from components.analytics import render_analytics_dashboard
 from components.recommendations import render_recommendations_interface
@@ -523,7 +523,7 @@ def main():
 
     with tab2:
         # Сравнение соединений
-        render_comparison_interface()
+        render_comparison_interface(comparison_comparator)
 
     with tab3:
         # Калькулятор свойств
