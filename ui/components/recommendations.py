@@ -49,6 +49,19 @@ class RecommendationsEngine:
         self.compound_cache = {}
         self.similarity_cache = {}
 
+    def _clean_smiles_data(self, compound: Dict[str, Any]) -> Dict[str, Any]:
+        """Очищает данные SMILES от невалидных значений"""
+        cleaned_compound = compound.copy()
+        
+        # Очищаем SMILES поле
+        if 'smiles' in cleaned_compound:
+            smiles = cleaned_compound['smiles']
+            if not self._is_valid_smiles(smiles):
+                cleaned_compound['smiles'] = None
+                logger.debug(f"Очищен невалидный SMILES для соединения {cleaned_compound.get('name', 'Unknown')}")
+        
+        return cleaned_compound
+
     def find_similar_compounds(self, target_compound: Dict[str, Any],
                               database_type: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
@@ -81,11 +94,13 @@ class RecommendationsEngine:
             cursor.execute(f"PRAGMA table_info({database_type})")
             columns = [row[1] for row in cursor.fetchall()]
 
-            # Преобразуем в словари
+            # Преобразуем в словари и очищаем данные
             compounds_data = []
             for row in all_compounds:
                 compound_dict = dict(zip(columns, row))
-                compounds_data.append(compound_dict)
+                # Очищаем SMILES данные
+                cleaned_compound = self._clean_smiles_data(compound_dict)
+                compounds_data.append(cleaned_compound)
 
             # Вычисляем схожесть для каждого соединения
             similarities = []
@@ -139,11 +154,16 @@ class RecommendationsEngine:
 
         # 4. Структурная схожесть (если доступен RDKit)
         if RDKIT_AVAILABLE and compound1.get('smiles') and compound2.get('smiles'):
-            struct_sim = self._structural_similarity(
-                compound1.get('smiles'),
-                compound2.get('smiles')
-            )
-            similarity += struct_sim * 0.5
+            # Проверяем валидность SMILES перед расчетом
+            if self._is_valid_smiles(compound1.get('smiles')) and self._is_valid_smiles(compound2.get('smiles')):
+                struct_sim = self._structural_similarity(
+                    compound1.get('smiles'),
+                    compound2.get('smiles')
+                )
+                similarity += struct_sim * 0.5
+            else:
+                # Если SMILES невалидны, пропускаем структурное сравнение
+                logger.debug(f"Пропускаю структурное сравнение: невалидные SMILES")
 
         # 5. Схожесть по свойствам
         if database_type == 'enzymes':
@@ -222,6 +242,10 @@ class RecommendationsEngine:
         if not RDKIT_AVAILABLE:
             return 0.0
 
+        # Проверяем валидность SMILES
+        if not self._is_valid_smiles(smiles1) or not self._is_valid_smiles(smiles2):
+            return 0.0
+
         try:
             mol1 = Chem.MolFromSmiles(smiles1)
             mol2 = Chem.MolFromSmiles(smiles2)
@@ -239,6 +263,30 @@ class RecommendationsEngine:
         except Exception as e:
             logger.error(f"Ошибка расчета структурного сходства: {e}")
             return 0.0
+
+    def _is_valid_smiles(self, smiles: str) -> bool:
+        """Проверяет, является ли строка валидным SMILES"""
+        if not smiles or not isinstance(smiles, str):
+            return False
+        
+        # Проверяем на недопустимые значения
+        invalid_values = ['0', 'None', 'null', '', 'nan', 'NaN']
+        if smiles in invalid_values:
+            logger.debug(f"Обнаружен невалидный SMILES: '{smiles}'")
+            return False
+        
+        # Проверяем, что SMILES содержит хотя бы один символ
+        if len(smiles.strip()) < 2:
+            logger.debug(f"SMILES слишком короткий: '{smiles}'")
+            return False
+        
+        # Проверяем, что SMILES содержит химические символы
+        chemical_chars = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789()[]{}@+-=#$%:;,.')
+        if not any(char in chemical_chars for char in smiles):
+            logger.debug(f"SMILES не содержит химических символов: '{smiles}'")
+            return False
+        
+        return True
 
     def _enzyme_similarity(self, enzyme1: Dict[str, Any], enzyme2: Dict[str, Any]) -> float:
         """Расчет сходства ферментов"""
@@ -496,6 +544,14 @@ def render_recommendations_interface():
 
                 if compounds_list:
                     st.success(f"✅ Загружено {len(compounds_list)} соединений из базы {database_options[selected_db]}")
+
+                    # Очищаем SMILES данные для всех соединений
+                    cleaned_compounds = []
+                    for compound in compounds_list:
+                        cleaned_compound = engine._clean_smiles_data(compound)
+                        cleaned_compounds.append(cleaned_compound)
+                    
+                    compounds_list = cleaned_compounds
 
                     # Выбор целевого соединения
                     compound_names = [f"{c.get('name', 'Без названия')} (ID: {c.get('id', '—')})" for c in compounds_list]
