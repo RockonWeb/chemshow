@@ -1,5 +1,5 @@
 """
-3D-визуализация молекулярных структур с использованием Py3Dmol и RDKit
+3D-визуализация молекулярных структур с использованием Py3Dmol и rdkit
 """
 import streamlit as st
 import streamlit.components.v1 as components
@@ -12,14 +12,14 @@ import os
 # Настройка логирования
 logger = logging.getLogger(__name__)
 
-# Попытка импорта RDKit
+# Попытка импорта rdkit
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem, Draw
     from rdkit.Chem.Draw import rdMolDraw2D
     RDKIT_AVAILABLE = True
 except ImportError:
-    logger.warning("RDKit не установлен. 3D-визуализация будет ограничена.")
+    logger.warning("rdkit не установлен. 3D-визуализация будет ограничена.")
     RDKIT_AVAILABLE = False
     Chem = None
     AllChem = None
@@ -77,7 +77,7 @@ def smiles_to_3d(smiles: str) -> Optional[str]:
         PDB строка или None при ошибке
     """
     if not RDKIT_AVAILABLE:
-        logger.error("RDKit недоступен для генерации 3D структур")
+        logger.error("rdkit недоступен для генерации 3D структур")
         return None
 
     try:
@@ -386,7 +386,7 @@ def get_molecule_info(smiles: str) -> Dict[str, Any]:
         Словарь с информацией о молекуле
     """
     if not RDKIT_AVAILABLE:
-        return {"error": "RDKit недоступен"}
+        return {"error": "rdkit недоступен"}
 
     try:
         mol = Chem.MolFromSmiles(smiles.strip())
@@ -457,7 +457,7 @@ def render_2d_structure(smiles: str, title: str = "2D Структура мол�
         return
 
     if not RDKIT_AVAILABLE:
-        st.error("❌ RDKit не установлен. Установите rdkit для 2D визуализации")
+        st.error("❌ rdkit не установлен. Установите rdkit для 2D визуализации")
         return
 
     try:
@@ -573,7 +573,7 @@ def install_instructions() -> str:
     instructions = """
     ## 📦 Установка зависимостей для 3D-визуализации
 
-    ### 1. RDKit (для генерации структур)
+    ### 1. rdkit (для генерации структур)
     ```bash
     conda install -c conda-forge rdkit
     # или
