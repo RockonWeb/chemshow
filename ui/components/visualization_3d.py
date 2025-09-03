@@ -12,6 +12,19 @@ import os
 # Настройка логирования
 logger = logging.getLogger(__name__)
 
+# Импорт дополнительных библиотек для продвинутой визуализации
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+
+try:
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+
 # Попытка импорта rdkit
 try:
     from rdkit import Chem
@@ -639,3 +652,366 @@ def install_instructions() -> str:
     """
 
     return instructions
+
+
+# ===========================
+# Продвинутые функции визуализации
+# ===========================
+
+def render_advanced_visualization_interface():
+    """Интерфейс продвинутой визуализации с редактированием структур"""
+    st.header("🎨 Продвинутая молекулярная визуализация")
+
+    # Проверяем зависимости
+    deps = check_dependencies()
+
+    if not deps.get("rdkit", False):
+        st.warning("⚠️ Для продвинутой визуализации требуется установка RDKit")
+        st.code(install_instructions(), language="bash")
+        return
+
+    # Основные настройки визуализации
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        vis_mode = st.selectbox(
+            "Режим визуализации:",
+            ["3D структура", "2D структура", "Overlay сравнение", "Анимация"],
+            help="Выберите тип визуализации"
+        )
+
+    with col2:
+        style_options = ["stick", "sphere", "line", "cartoon", "surface"]
+        vis_style = st.selectbox(
+            "Стиль отображения:",
+            style_options,
+            index=0,
+            help="Стиль отображения молекулы"
+        )
+
+    with col3:
+        color_scheme = st.selectbox(
+            "Цветовая схема:",
+            ["default", "by element", "by residue", "rainbow", "chain"],
+            help="Цветовая схема для атомов"
+        )
+
+    # Ввод SMILES для визуализации
+    st.subheader("📝 Введите SMILES строку")
+
+    smiles_input = st.text_input(
+        "SMILES:",
+        placeholder="Например: CC(=O)O (уксусная кислота) или C1CCCCC1 (циклогексан)",
+        help="Введите SMILES строку молекулы для визуализации"
+    )
+
+    # Дополнительные опции в зависимости от режима
+    if vis_mode == "Overlay сравнение":
+        st.subheader("🔄 Сравнение структур")
+
+        smiles2 = st.text_input(
+            "SMILES второй молекулы:",
+            placeholder="Введите SMILES второй молекулы для сравнения",
+            help="Для overlay режима нужны две молекулы"
+        )
+
+        if smiles2:
+            smiles_list = [smiles_input, smiles2] if smiles_input else [smiles2]
+        else:
+            smiles_list = [smiles_input] if smiles_input else []
+
+    elif vis_mode == "Анимация":
+        st.subheader("🎬 Настройки анимации")
+
+        animation_type = st.selectbox(
+            "Тип анимации:",
+            ["вращение", "вибрация", "конформации"],
+            help="Выберите тип анимации"
+        )
+
+        if animation_type == "конформации":
+            n_conformers = st.slider("Количество конформеров:", 2, 10, 3)
+        else:
+            n_conformers = 1
+
+        smiles_list = [smiles_input] if smiles_input else []
+
+    else:
+        smiles_list = [smiles_input] if smiles_input else []
+
+    # Кнопка визуализации
+    if st.button("🎨 Визуализировать", type="primary", use_container_width=True):
+        if not smiles_list or not any(smiles_list):
+            st.error("❌ Введите хотя бы одну SMILES строку")
+            return
+
+        with st.spinner("Генерирую визуализацию..."):
+            try:
+                if vis_mode == "3D структура":
+                    render_3d_structure(smiles_input, style=vis_style, color=color_scheme)
+
+                elif vis_mode == "2D структура":
+                    render_2d_structure(smiles_input)
+
+                elif vis_mode == "Overlay сравнение" and len(smiles_list) >= 2:
+                    render_overlay_comparison(smiles_list[0], smiles_list[1], style=vis_style)
+
+                elif vis_mode == "Анимация":
+                    render_animation(smiles_input, animation_type, n_conformers, style=vis_style)
+
+                else:
+                    st.error("❌ Выбранный режим визуализации не поддерживается")
+
+            except Exception as e:
+                st.error(f"❌ Ошибка визуализации: {str(e)}")
+                logger.error(f"Visualization error: {e}")
+
+    # Инструменты редактирования (если выбрана молекула)
+    if smiles_input and RDKIT_AVAILABLE:
+        st.divider()
+        st.subheader("🛠️ Инструменты редактирования")
+
+        render_editing_tools(smiles_input)
+
+
+def render_2d_structure(smiles: str):
+    """Отображение 2D структуры молекулы"""
+    if not RDKIT_AVAILABLE:
+        st.error("RDKit не установлен")
+        return
+
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            st.error("Неверный SMILES формат")
+            return
+
+        # Создаем изображение
+        img = Draw.MolToImage(mol, size=(600, 400))
+
+        # Отображаем изображение
+        st.image(img, caption=f"2D структура: {smiles}", use_column_width=True)
+
+        # Дополнительная информация
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Атомы", mol.GetNumAtoms())
+        with col2:
+            st.metric("Связи", mol.GetNumBonds())
+        with col3:
+            st.metric("Кольца", Chem.rdMolDescriptors.CalcNumRings(mol))
+
+    except Exception as e:
+        st.error(f"Ошибка создания 2D структуры: {str(e)}")
+
+
+def render_overlay_comparison(smiles1: str, smiles2: str, style: str = "stick"):
+    """Overlay сравнение двух структур"""
+    if not RDKIT_AVAILABLE or not PY3DMOL_AVAILABLE:
+        st.error("Требуется RDKit и Py3DMol")
+        return
+
+    try:
+        mol1 = Chem.MolFromSmiles(smiles1)
+        mol2 = Chem.MolFromSmiles(smiles2)
+
+        if mol1 is None or mol2 is None:
+            st.error("Неверный формат SMILES")
+            return
+
+        # Генерируем 3D координаты
+        mol1 = Chem.AddHs(mol1)
+        mol2 = Chem.AddHs(mol2)
+        AllChem.EmbedMolecule(mol1, randomSeed=42)
+        AllChem.EmbedMolecule(mol2, randomSeed=42)
+
+        # Создаем viewer
+        viewer = py3Dmol.view(width=800, height=600)
+
+        # Добавляем первую молекулу (синяя)
+        molblock1 = Chem.MolToMolBlock(mol1)
+        viewer.addModel(molblock1, 'mol')
+        viewer.setStyle({'model': 0}, {style: {'color': 'blue'}})
+
+        # Добавляем вторую молекулу (красная)
+        molblock2 = Chem.MolToMolBlock(mol2)
+        viewer.addModel(molblock2, 'mol')
+        viewer.setStyle({'model': 1}, {style: {'color': 'red'}})
+
+        # Настройки отображения
+        viewer.zoomTo()
+        viewer.setBackgroundColor('white')
+
+        # Отображаем
+        viewer_html = viewer._make_html()
+        components.html(viewer_html, height=650)
+
+        # Информация о сравнении
+        st.info("🔵 Синяя молекула | 🔴 Красная молекула")
+
+    except Exception as e:
+        st.error(f"Ошибка overlay сравнения: {str(e)}")
+
+
+def render_animation(smiles: str, animation_type: str, n_conformers: int = 3, style: str = "stick"):
+    """Анимированная визуализация"""
+    if not RDKIT_AVAILABLE or not PY3DMOL_AVAILABLE:
+        st.error("Требуется RDKit и Py3DMol")
+        return
+
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            st.error("Неверный формат SMILES")
+            return
+
+        mol = Chem.AddHs(mol)
+
+        if animation_type == "вращение":
+            # Простое вращение
+            AllChem.EmbedMolecule(mol, randomSeed=42)
+
+            viewer = py3Dmol.view(width=800, height=600)
+            molblock = Chem.MolToMolBlock(mol)
+            viewer.addModel(molblock, 'mol')
+            viewer.setStyle({style: {}})
+
+            # Добавляем вращение
+            viewer.spin(True)
+            viewer.setBackgroundColor('white')
+            viewer.zoomTo()
+
+            viewer_html = viewer._make_html()
+            components.html(viewer_html, height=650)
+
+        elif animation_type == "конформации":
+            # Генерируем несколько конформеров
+            conformers = []
+            try:
+                AllChem.EmbedMultipleConfs(mol, numConfs=n_conformers, randomSeed=42)
+
+                for i in range(n_conformers):
+                    mol_copy = Chem.Mol(mol)
+                    mol_copy.RemoveAllConformers()
+                    mol_copy.AddConformer(mol.GetConformer(i))
+                    conformers.append(mol_copy)
+
+            except:
+                # Если генерация конформеров не удалась, используем один
+                AllChem.EmbedMolecule(mol, randomSeed=42)
+                conformers = [mol]
+
+            # Создаем анимацию
+            viewer = py3Dmol.view(width=800, height=600)
+
+            for i, conf_mol in enumerate(conformers):
+                molblock = Chem.MolToMolBlock(conf_mol)
+                viewer.addModel(molblock, 'mol')
+
+            # Настройки анимации
+            viewer.setStyle({style: {}})
+            viewer.animate({'loop': 'backAndForth'})
+            viewer.setBackgroundColor('white')
+            viewer.zoomTo()
+
+            viewer_html = viewer._make_html()
+            components.html(viewer_html, height=650)
+
+            st.info(f"🎬 Анимация {len(conformers)} конформеров")
+
+        elif animation_type == "вибрация":
+            # Имитация вибрации связей
+            AllChem.EmbedMolecule(mol, randomSeed=42)
+
+            viewer = py3Dmol.view(width=800, height=600)
+            molblock = Chem.MolToMolBlock(mol)
+            viewer.addModel(molblock, 'mol')
+            viewer.setStyle({style: {}})
+
+            # Добавляем вибрацию
+            viewer.vibrate(0.5, 1.0)
+            viewer.setBackgroundColor('white')
+            viewer.zoomTo()
+
+            viewer_html = viewer._make_html()
+            components.html(viewer_html, height=650)
+
+    except Exception as e:
+        st.error(f"Ошибка анимации: {str(e)}")
+
+
+def render_editing_tools(smiles: str):
+    """Инструменты редактирования молекулы"""
+    if not RDKIT_AVAILABLE:
+        st.error("Требуется RDKit для инструментов редактирования")
+        return
+
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return
+
+        # Инструменты редактирования
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            if st.button("⚛️ Добавить водороды", use_container_width=True):
+                mol_h = Chem.AddHs(mol)
+                smiles_h = Chem.MolToSmiles(mol_h)
+                st.code(f"SMILES с водородами:\n{smiles_h}")
+
+        with col2:
+            if st.button("🧹 Удалить стереохимию", use_container_width=True):
+                mol_clean = Chem.MolFromSmiles(Chem.MolToSmiles(mol, isomericSmiles=False))
+                if mol_clean:
+                    smiles_clean = Chem.MolToSmiles(mol_clean, isomericSmiles=False)
+                    st.code(f"SMILES без стереохимии:\n{smiles_clean}")
+
+        with col3:
+            if st.button("🔄 Канонизировать", use_container_width=True):
+                canonical_smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles), canonical=True)
+                st.code(f"Канонический SMILES:\n{canonical_smiles}")
+
+        with col4:
+            if st.button("📊 Свойства", use_container_width=True):
+                # Отображаем свойства в expander
+                with st.expander("Молекулярные свойства", expanded=True):
+                    props = calculate_molecular_properties(smiles)
+                    if props:
+                        for prop, value in props.items():
+                            st.write(f"**{prop}:** {value}")
+
+    except Exception as e:
+        st.error(f"Ошибка инструментов редактирования: {str(e)}")
+
+
+def calculate_molecular_properties(smiles: str) -> Dict[str, Any]:
+    """Расчет молекулярных свойств для продвинутой визуализации"""
+    if not RDKIT_AVAILABLE:
+        return {}
+
+    try:
+        from rdkit.Chem import Descriptors, Crippen, rdMolDescriptors
+
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return {}
+
+        properties = {
+            "Формула": Chem.rdMolDescriptors.CalcMolFormula(mol),
+            "Молекулярная масса": ".3f",
+            "LogP": ".2f",
+            "TPSA": ".2f",
+            "Количество атомов": mol.GetNumAtoms(),
+            "Количество тяжелых атомов": Chem.rdMolDescriptors.CalcNumHeavyAtoms(mol),
+            "Количество акцепторов H": Chem.rdMolDescriptors.CalcNumHBA(mol),
+            "Количество доноров H": Chem.rdMolDescriptors.CalcNumHBD(mol),
+            "Количество ротамеров": Chem.rdMolDescriptors.CalcNumRotatableBonds(mol),
+            "Количество колец": Chem.rdMolDescriptors.CalcNumRings(mol),
+        }
+
+        return properties
+
+    except Exception as e:
+        logger.error(f"Ошибка расчета свойств: {e}")
+        return {}

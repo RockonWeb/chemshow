@@ -7,6 +7,7 @@ from .utils import (
     get_display_name, safe_get_value, format_mass, format_chemical_formula,
     create_external_links, create_pills_list, truncate_description
 )
+from .comparison import add_to_comparison_button, comparison_comparator
 
 
 def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
@@ -45,11 +46,16 @@ def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
         unsafe_allow_html=True,
     )
 
-    # Кнопка для открытия деталей
-    if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Открываем детали метаболита
-        st.session_state.show_metabolite_details = True
-        st.session_state.selected_metabolite = metabolite
+    # Кнопки действий
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+            # Открываем детали метаболита
+            st.session_state.show_metabolite_details = True
+            st.session_state.selected_metabolite = metabolite
+
+    with col2:
+        add_to_comparison_button(metabolite, "metabolites", comparison_comparator)
 
 
 def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
@@ -90,11 +96,16 @@ def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
         unsafe_allow_html=True,
     )
 
-    # Кнопка для открытия деталей
-    if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Открываем детали фермента
-        st.session_state.show_enzyme_details = True
-        st.session_state.selected_enzyme = enzyme
+    # Кнопки действий
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+            # Открываем детали фермента
+            st.session_state.show_enzyme_details = True
+            st.session_state.selected_enzyme = enzyme
+
+    with col2:
+        add_to_comparison_button(enzyme, "enzymes", comparison_comparator)
 
 
 def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
@@ -136,11 +147,16 @@ def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
         unsafe_allow_html=True,
     )
 
-    # Кнопка для открытия деталей
-    if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Открываем детали белка
-        st.session_state.show_protein_details = True
-        st.session_state.selected_protein = protein
+    # Кнопки действий
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+            # Открываем детали белка
+            st.session_state.show_protein_details = True
+            st.session_state.selected_protein = protein
+
+    with col2:
+        add_to_comparison_button(protein, "proteins", comparison_comparator)
 
 
 def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> None:
@@ -170,11 +186,16 @@ def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> Non
         unsafe_allow_html=True,
     )
 
-    # Кнопка для открытия деталей
-    if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Открываем детали углевода
-        st.session_state.show_carbohydrate_details = True
-        st.session_state.selected_carbohydrate = carbohydrate
+    # Кнопки действий
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+            # Открываем детали углевода
+            st.session_state.show_carbohydrate_details = True
+            st.session_state.selected_carbohydrate = carbohydrate
+
+    with col2:
+        add_to_comparison_button(carbohydrate, "carbohydrates", comparison_comparator)
 
 
 def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
@@ -204,8 +225,13 @@ def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
         unsafe_allow_html=True,
     )
 
-    # Кнопка для открытия деталей
-    if st.button("📋 Показать детали", key=card_key, use_container_width=True):
-        # Открываем детали липида
-        st.session_state.show_lipid_details = True
-        st.session_state.selected_lipid = lipid
+    # Кнопки действий
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+            # Открываем детали липида
+            st.session_state.show_lipid_details = True
+            st.session_state.selected_lipid = lipid
+
+    with col2:
+        add_to_comparison_button(lipid, "lipids", comparison_comparator)

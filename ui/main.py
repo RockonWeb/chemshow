@@ -49,8 +49,13 @@ from components.details import (
 )
 from components.visualization_3d import (
     render_3d_structure,
-    check_dependencies, install_instructions, 
+    check_dependencies, install_instructions,
+    render_advanced_visualization_interface,
 )
+from components.comparison import render_comparison_interface
+from components.calculator import render_calculator_interface
+from components.analytics import render_analytics_dashboard
+from components.recommendations import render_recommendations_interface
 
 # Настройка логирования
 logging.basicConfig(
@@ -495,15 +500,46 @@ def main():
     st.markdown("**Унифицированный поиск по метаболитам, ферментам, белкам, углеводам и липидам**",
                 help="Поиск по всем типам соединений в одной форме")
 
-    # Статистика базы данных
-    st.markdown("### Статистика базы данных")
+    # Создаем вкладки для различных функций
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "🔍 Поиск",
+        "🔬 Сравнение",
+        "🧮 Калькулятор",
+        "📊 Аналитика",
+        "🎯 Рекомендации",
+        "🎨 Визуализация"
+    ])
 
-    # Отображение статистики базы данных
-    if not render_database_stats():
-        st.stop()
+    with tab1:
+        # Основной поиск
+        st.markdown("### Статистика базы данных")
 
-    # Поиск и результаты
-    handle_search_and_display()
+        # Отображение статистики базы данных
+        if not render_database_stats():
+            st.stop()
+
+        # Поиск и результаты
+        handle_search_and_display()
+
+    with tab2:
+        # Сравнение соединений
+        render_comparison_interface()
+
+    with tab3:
+        # Калькулятор свойств
+        render_calculator_interface()
+
+    with tab4:
+        # Аналитика и дашборды
+        render_analytics_dashboard()
+
+    with tab5:
+        # Система рекомендаций
+        render_recommendations_interface()
+
+    with tab6:
+        # Продвинутая визуализация
+        render_advanced_visualization_interface()
 
     # Детали
     display_details()
