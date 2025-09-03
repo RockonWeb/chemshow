@@ -31,6 +31,23 @@ except ImportError as e:
     RDKIT_AVAILABLE = False
     Chem = None
     AllChem = None
+except OSError as e:
+    if "libXrender.so.1" in str(e) or "libX11" in str(e) or "X11" in str(e):
+        logger.warning("rdkit установлен, но отсутствуют X11 библиотеки. 3D-визуализация будет ограничена.")
+        logger.info("Для решения установите: sudo apt-get install libxrender1 libx11-6 libxext6")
+        RDKIT_AVAILABLE = False
+        Chem = None
+        AllChem = None
+    else:
+        logger.warning(f"rdkit недоступен из-за системной ошибки: {e}")
+        RDKIT_AVAILABLE = False
+        Chem = None
+        AllChem = None
+except Exception as e:
+    logger.warning(f"Неожиданная ошибка при импорте rdkit: {e}")
+    RDKIT_AVAILABLE = False
+    Chem = None
+    AllChem = None
 
 # Попытка импорта Py3Dmol
 try:
@@ -588,12 +605,23 @@ def install_instructions() -> str:
     pip install rdkit-pypi
     ```
 
-    ### 2. Py3Dmol (для 3D-визуализации)
+    ### 2. Системные зависимости для rdkit (Linux)
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install libxrender1 libx11-6 libxext6 libxss1 libxrandr2
+    
+    # CentOS/RHEL/Fedora
+    sudo yum install libXrender libX11 libXext libXScrnSaver libXrandr
+    # или для новых версий
+    sudo dnf install libXrender libX11 libXext libXScrnSaver libXrandr
+    ```
+
+    ### 3. Py3Dmol (для 3D-визуализации)
     ```bash
     pip install py3Dmol
     ```
 
-    ### 3. Дополнительные зависимости
+    ### 4. Дополнительные зависимости
     ```bash
     pip install ipywidgets
     ```
@@ -604,6 +632,10 @@ def install_instructions() -> str:
     import py3Dmol
     print("Все зависимости установлены!")
     ```
+
+    ### Решение проблем с X11:
+    Если rdkit установлен, но выдает ошибку "libXrender.so.1: cannot open shared object file",
+    установите системные зависимости из пункта 2.
     """
 
     return instructions
