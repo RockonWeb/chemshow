@@ -19,6 +19,12 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
+# Импорт вспомогательных функций
+try:
+    from .utils import get_display_name, safe_get_value, format_mass
+except ImportError:
+    from utils import get_display_name, safe_get_value, format_mass
+
 # Проверяем доступность RDKit для продвинутых расчетов
 try:
     from rdkit import Chem
@@ -44,7 +50,7 @@ class RecommendationsEngine:
         Поиск похожих соединений на основе различных критериев
         """
         try:
-            from config.settings import DATABASE_PATHS
+            from ..config.settings import DATABASE_PATHS
 
             if database_type not in DATABASE_PATHS:
                 return []
@@ -294,46 +300,69 @@ class RecommendationsEngine:
             return {"error": "Недостаточно данных для кластеризации"}
 
         try:
-            # Создаем признаки для кластеризации
+            # Создаем признаки для кластеризации с фиксированной длиной
             features = []
 
             for compound in compounds:
                 feature_vector = []
 
-                # Числовые признаки
+                # Общие признаки для всех типов (всегда 3 признака)
                 mass = compound.get('exact_mass', 0)
-                if mass:
-                    feature_vector.append(float(mass))
+                feature_vector.append(float(mass) if mass else 0.0)
 
-                # Для молекулярных соединений
+                name_len = len(compound.get('name', ''))
+                feature_vector.append(float(name_len))
+
+                formula_len = len(compound.get('formula', ''))
+                feature_vector.append(float(formula_len))
+
+                # Дополнительные признаки в зависимости от типа
                 if database_type in ['metabolites', 'carbohydrates', 'lipids']:
-                    # Длина формулы как признак
-                    formula = compound.get('formula', '')
-                    feature_vector.append(len(formula))
+                    # Количество элементов в формуле
+                    elements = self._parse_formula(compound.get('formula', ''))
+                    feature_vector.append(float(len(elements)))
+                    # Длина названия класса
+                    class_len = len(compound.get('class_name', ''))
+                    feature_vector.append(float(class_len))
 
-                    # Количество элементов
-                    elements = self._parse_formula(formula)
-                    feature_vector.append(len(elements))
-
-                # Для ферментов
                 elif database_type == 'enzymes':
+                    # EC номер как числовые признаки
                     ec_number = compound.get('ec_number', '0.0.0.0')
                     ec_parts = ec_number.split('.')
-                    for part in ec_parts[:4]:  # Берем первые 4 части
-                        try:
-                            feature_vector.append(float(part))
-                        except:
+                    for i in range(4):  # Фиксированная длина 4
+                        if i < len(ec_parts):
+                            try:
+                                feature_vector.append(float(ec_parts[i]))
+                            except:
+                                feature_vector.append(0.0)
+                        else:
                             feature_vector.append(0.0)
 
-                # Для белков
                 elif database_type == 'proteins':
+                    # Длина последовательности
                     seq_len = compound.get('sequence_length', 0)
-                    if seq_len:
-                        feature_vector.append(float(seq_len))
+                    feature_vector.append(float(seq_len) if seq_len else 0.0)
+                    # Длина названия функции
+                    func_len = len(compound.get('function', ''))
+                    feature_vector.append(float(func_len))
+                    # Длина семейства
+                    family_len = len(compound.get('family', ''))
+                    feature_vector.append(float(family_len))
 
                 features.append(feature_vector)
 
-            if not features or len(features[0]) == 0:
+            if not features:
+                return {"error": "Недостаточно данных для кластеризации"}
+
+            # Проверяем, что все векторы имеют одинаковую длину
+            feature_lengths = [len(f) for f in features]
+            if len(set(feature_lengths)) > 1:
+                logger.warning(f"Векторы признаков имеют разную длину: {set(feature_lengths)}")
+                # Усекаем до минимальной длины
+                min_length = min(feature_lengths)
+                features = [f[:min_length] for f in features]
+
+            if len(features[0]) == 0:
                 return {"error": "Недостаточно признаков для кластеризации"}
 
             # Нормализация признаков
@@ -435,7 +464,7 @@ def render_recommendations_interface():
     if selected_db:
         # Загружаем соединения из выбранной базы
         try:
-            from config.settings import DATABASE_PATHS
+            from ..config.settings import DATABASE_PATHS
 
             db_path = DATABASE_PATHS[selected_db]
             if os.path.exists(db_path):

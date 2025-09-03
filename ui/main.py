@@ -24,7 +24,7 @@ sys.path.insert(0, str(config_dir))
 sys.path.insert(0, str(services_dir))
 sys.path.insert(0, str(components_dir))
 
-from config.settings import (
+from .config.settings import (
     UI_CONFIG, LOGGING_CONFIG, get_database_paths,
     SEARCH_CONFIG, SEARCH_PRESETS
 )

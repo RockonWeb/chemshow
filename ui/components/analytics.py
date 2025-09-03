@@ -15,6 +15,12 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# Импорт вспомогательных функций
+try:
+    from .utils import get_display_name, safe_get_value, format_mass
+except ImportError:
+    from utils import get_display_name, safe_get_value, format_mass
+
 
 class AnalyticsDashboard:
     """Класс для создания аналитических дашбордов"""
@@ -25,7 +31,7 @@ class AnalyticsDashboard:
     def load_database_stats(self) -> Dict[str, Any]:
         """Загрузка статистики из всех баз данных"""
         try:
-            from config.settings import DATABASE_PATHS
+            from ..config.settings import DATABASE_PATHS
 
             stats = {
                 "total_compounds": 0,
