@@ -1,270 +1,255 @@
-# 🧬 Metabolome Handbook
+# 🧬 Protein Site - Справочник биологических соединений
 
-Educational metabolomics reference for biochemistry and chemistry courses. Search metabolites by mass, formula, or name, and annotate your LC-MS data.
+Интерактивный справочник для поиска и анализа биологических соединений: метаболитов, ферментов, белков, углеводов и липидов. Приложение разработано для образовательных целей в области биохимии и химии.
 
-## 📋 Features
+## 📋 Основные возможности
 
-**Search Metabolites**: Find by mass (m/z), chemical formula, or name
+**🔍 Поиск соединений:**
+- Поиск по массе (m/z) с настраиваемой точностью
+- Поиск по названию соединения
+- Поиск по типу организма
+- Фильтрация по категориям соединений
 
-**Database Integration**: Links to HMDB, KEGG, ChEBI, PubChem, and UniProt
+**📊 Базы данных:**
+- **Метаболиты** - промежуточные продукты обмена веществ
+- **Ферменты** - биологические катализаторы
+- **Белки** - структурные и функциональные молекулы
+- **Углеводы** - сахара и полисахариды
+- **Липиды** - жиры и жироподобные вещества
 
-**CSV Annotation**: Upload LC-MS peak lists for automatic annotation
+**🎨 Современный интерфейс:**
+- Адаптивный дизайн с карточками и таблицами
+- 3D визуализация молекулярных структур
+- Экспорт результатов в различные форматы
+- Статистика и аналитика
 
-**Export Results**: Download results as CSV or Excel files
+## 🚀 Быстрый старт
 
-* **Educational Focus**: Designed for learning biochemistry and chemistry
-
-## 🚀 Quick Start
-
-### Option 1: Using Virtual Environment (.venv)
-
-#### Prerequisites
+### Требования
 
 - Python 3.11+
 - pip
+- Git
 
-#### Setup
+### Установка и запуск
 
 ```bash
-# Clone or download the project
-cd Protein
+# Клонирование репозитория
+git clone https://github.com/RockonWeb/chemshow.git
+cd chemshow
 
-# Create virtual environment
+# Создание виртуального окружения
 python -m venv .venv
 
-# Activate virtual environment
-# On Windows:
+# Активация виртуального окружения
+# Windows:
 .venv\Scripts\activate
-# On Linux/Mac:
+# Linux/Mac:
 source .venv/bin/activate
 
-# Install dependencies
+# Установка зависимостей
 pip install -r requirements.txt
 
-# Create data directory
-mkdir -p data
-
-# Import sample data
-python data/import_data.py
-
-# Start API server (in one terminal)
-uvicorn api.app.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Start UI (in another terminal - don't forget to activate .venv)
-streamlit run ui/main.py --server.address 0.0.0.0 --server.port 8501
+# Запуск приложения
+streamlit run ui/main.py
 ```
 
-#### Access the Application
+### Доступ к приложению
 
-- **Web Interface**: http://localhost:8501
-- **API Documentation**: http://localhost:8000/docs
-- **API Health Check**: http://localhost:8000/health
+- **Веб-интерфейс**: http://localhost:8501
+- **Порт по умолчанию**: 8501
 
-### Option 2: Using Docker
-
-#### Prerequisites
-
-- Docker
-- Docker Compose
-
-#### Quick Start with SQLite (Development)
-
-```bash
-# Start all services with SQLite
-docker-compose -f docker-compose.dev.yml up --build
-
-# Access:
-# Web Interface: http://localhost:8501
-# API: http://localhost:8000/docs
-```
-
-#### Production Setup with PostgreSQL
-
-```bash
-# Start all services with PostgreSQL
-docker-compose up --build
-
-# Access:
-# Web Interface: http://localhost:8501
-# API: http://localhost:8000/docs
-# Database: localhost:5432
-```
-
-## 📊 Sample Data
-
-The project includes sample metabolites data with:
-
-- 15+ common metabolites (glucose, pyruvate, amino acids, etc.)
-- Biochemical pathways (Glycolysis, TCA cycle, etc.)
-- Enzyme associations
-- External database IDs (HMDB, KEGG, ChEBI, PubChem)
-
-Sample CSV file for testing annotation: `data/sample_data.csv`
-
-## 🔧 API Endpoints
-
-### Search
-
-- `GET /metabolites/search` - Search metabolites
-- `GET /metabolites/{id}` - Get metabolite details
-
-### Annotation
-
-- `POST /annotate/csv` - Annotate CSV file
-- `POST /annotate/mz-list` - Annotate m/z list
-
-### Utility
-
-- `GET /health` - Health check
-- `GET /` - API information
-
-### Example API Usage
-
-```python
-import requests
-
-# Search by mass
-response = requests.get("http://localhost:8000/metabolites/search", 
-                       params={"mass": 180.063, "tol_ppm": 10})
-print(response.json())
-
-# Search by name
-response = requests.get("http://localhost:8000/metabolites/search", 
-                       params={"q": "glucose"})
-print(response.json())
-```
-
-## 📁 Project Structure
+## 📁 Структура проекта
 
 ```
-Protein/
-├── api/                    # FastAPI backend
-│   ├── app/               # Application code
-│   ├── database/          # Database configuration
-│   ├── models/            # SQLAlchemy models
-│   ├── schemas/           # Pydantic schemas
-│   └── services/          # Business logic
-├── ui/                    # Streamlit frontend
-├── data/                  # Data and import scripts
-├── docker/                # Docker configurations
-├── alembic/               # Database migrations
-├── tests/                 # Test files
-├── requirements.txt       # Python dependencies
-├── docker-compose.yml     # Production docker setup
-├── docker-compose.dev.yml # Development docker setup
-└── README.md             # This file
+protein-site/
+├── ui/                           # Пользовательский интерфейс
+│   ├── main.py                  # Главный файл приложения
+│   ├── components/              # Компоненты UI
+│   │   ├── cards.py            # Карточки для отображения данных
+│   │   ├── details.py          # Детальные представления
+│   │   ├── search_form.py      # Форма поиска
+│   │   ├── styles.py           # Стили и CSS
+│   │   ├── utils.py            # Утилиты
+│   │   └── visualization_3d.py # 3D визуализация
+│   ├── config/                  # Конфигурация
+│   │   └── settings.py         # Настройки приложения
+│   └── services/                # Сервисы
+│       ├── database.py         # Работа с базой данных
+│       ├── search_service.py   # Сервис поиска
+│       ├── cache_manager.py    # Управление кешем
+│       └── performance_monitor.py # Мониторинг производительности
+├── data/                        # Базы данных
+│   ├── proteins.db             # База данных белков
+│   ├── enzymes.db              # База данных ферментов
+│   ├── metabolites.db          # База данных метаболитов
+│   ├── carbohydrates.db        # База данных углеводов
+│   └── lipids.db               # База данных липидов
+├── requirements.txt             # Зависимости Python
+└── README.md                   # Документация
 ```
 
-## 🧪 Educational Use Cases
+## 🔍 Функциональность поиска
 
-### Laboratory Exercises
+### Типы поиска
 
-1. **Mass Spectrometry Analysis**: Upload peak lists from LC-MS experiments
-2. **Metabolite Identification**: Practice identifying unknowns by mass
-3. **Pathway Mapping**: Connect metabolites to biochemical pathways
+1. **Поиск по массе (m/z)**
+   - Настраиваемая точность в ppm
+   - Фильтрация по типу организма
+   - Сортировка по релевантности
 
-### Example Assignments
+2. **Поиск по названию**
+   - Нечеткий поиск
+   - Автодополнение
+   - Поиск по частичному совпадению
 
-- Annotate 20 LC-MS peaks and identify key metabolites
-- Find metabolites for mass 180.063 ±10 ppm and create a reference table
-- Map identified metabolites to glycolysis pathway
+3. **Фильтрация по категориям**
+   - Метаболиты
+   - Ферменты
+   - Белки
+   - Углеводы
+   - Липиды
 
-## 🛠️ Development
+### Результаты поиска
 
-### Database Migrations
+- **Карточки** - компактное отображение с основной информацией
+- **Таблицы** - детальное представление с возможностью сортировки
+- **Пагинация** - навигация по большим наборам результатов
+- **Экспорт** - сохранение результатов в различных форматах
 
-```bash
-# Create new migration
-alembic revision --autogenerate -m "Description"
+## 🎨 Компоненты интерфейса
 
-# Apply migrations
-alembic upgrade head
+### Карточки соединений
 
-# Rollback
-alembic downgrade -1
-```
+- **Метаболиты**: химическая формула, масса, класс соединений
+- **Ферменты**: EC номер, субстрат, продукт, кинетика
+- **Белки**: аминокислотная последовательность, структура, функции
+- **Углеводы**: тип сахара, степень полимеризации, связи
+- **Липиды**: класс липидов, жирные кислоты, структура
 
-### Adding New Data
+### Детальные представления
 
-1. Edit `data/import_data.py` to add more metabolites
-2. Run the import script: `python data/import_data.py`
-3. Or use the API to add data programmatically
+- Полная информация о соединении
+- Химические свойства
+- Биологические функции
+- Связанные соединения
+- Внешние ссылки на базы данных
 
-### Testing
+### 3D визуализация
 
-```bash
-# Run tests
-pytest tests/
+- Интерактивные молекулярные структуры
+- Химические свойства молекул
+- Возможность вращения и масштабирования
+- Экспорт структур
 
-# Run with coverage
-pytest --cov=api tests/
-```
+## 🗄️ Базы данных
 
-## 📚 Data Sources
+Проект использует SQLite базы данных для хранения информации о различных типах биологических соединений:
 
-- **HMDB**: Human Metabolome Database
-- **ChEBI**: Chemical Entities of Biological Interest
-- **KEGG**: Kyoto Encyclopedia of Genes and Genomes
-- **PubChem**: Chemical information database
-- **LIPID MAPS**: Lipidomics data and tools
+- **proteins.db** - информация о белках и их структуре
+- **enzymes.db** - данные о ферментах и их каталитической активности
+- **metabolites.db** - метаболиты и промежуточные продукты обмена
+- **carbohydrates.db** - углеводы и сахара
+- **lipids.db** - липиды и жироподобные вещества
 
-## ⚖️ License and Usage
+## ⚙️ Конфигурация
 
-This is an educational tool designed for academic use. Please check individual database licenses:
+### Основные настройки
 
-- HMDB: Free for academic use
-- ChEBI: Open data
-- KEGG: Academic use allowed, commercial use requires license
-- PubChem: Public domain
+Настройки приложения находятся в файле `ui/config/settings.py`:
 
-## 🔧 Configuration
+- Размер страницы по умолчанию
+- Настройки поиска
+- Конфигурация логирования
+- Пути к базам данных
 
-### Environment Variables
+### Настройка поиска
 
-```bash
-# Database
-DATABASE_URL=sqlite:///./data/metabolome.db
+- Точность поиска по массе (ppm)
+- Пресеты для различных типов анализа
+- Фильтры по организмам
+- Настройки пагинации
 
-# API
-API_HOST=0.0.0.0
-API_PORT=8000
-DEBUG=true
+## 🛠️ Разработка
 
-# UI
-STREAMLIT_PORT=8501
-```
+### Добавление новых компонентов
 
-### Customization
+1. Создайте новый файл в папке `ui/components/`
+2. Импортируйте в `ui/main.py`
+3. Добавьте в интерфейс приложения
 
-- Modify search tolerances in the UI
-- Add new metabolite classes in `data/import_data.py`
-- Extend API endpoints in `api/app/main.py`
-- Customize UI layout in `ui/main.py`
+### Расширение баз данных
 
-## 🆘 Troubleshooting
+1. Создайте новую SQLite базу данных в папке `data/`
+2. Обновите `ui/services/database.py`
+3. Добавьте соответствующие компоненты отображения
 
-### Common Issues
+### Стилизация
 
-1. **Import errors**: Make sure `.venv` is activated and all dependencies are installed
-2. **Database errors**: Check if data directory exists and is writable
-3. **API connection errors**: Ensure API is running on port 8000
-4. **Permission errors**: On Linux/Mac, you might need to set file permissions
+CSS стили находятся в `ui/components/styles.py` и могут быть легко модифицированы для изменения внешнего вида приложения.
 
-### Getting Help
+## 📚 Образовательное применение
 
-- Check the API documentation at `/docs`
-- Review log files for error details
-- Ensure all services are running and healthy
+### Лабораторные работы
 
-## 🚧 Future Enhancements
+1. **Идентификация соединений** - поиск по массе и названию
+2. **Анализ метаболических путей** - изучение связей между соединениями
+3. **Структурный анализ** - 3D визуализация молекул
 
-- Support for mzML file format
-- Pathway visualization
-- User authentication
-- More sophisticated mass spectrometry features
-- Integration with more databases
-- Advanced statistical analysis tools
+### Практические задания
+
+- Найти все метаболиты с массой 180 ±10 ppm
+- Изучить ферменты гликолиза
+- Проанализировать структуру белков
+- Сравнить свойства различных липидов
+
+## 🔧 Технические требования
+
+### Основные зависимости
+
+- **Streamlit** - веб-интерфейс
+- **Pandas** - обработка данных
+- **SQLite** - базы данных
+- **Py3Dmol** - 3D визуализация
+- **Plotly** - графики и диаграммы
+
+### Системные требования
+
+- Минимум 4 GB RAM
+- Поддержка OpenGL для 3D визуализации
+- Современный веб-браузер
+
+## 🆘 Устранение неполадок
+
+### Частые проблемы
+
+1. **Ошибки импорта**: убедитесь, что виртуальное окружение активировано
+2. **Проблемы с 3D**: проверьте поддержку WebGL в браузере
+3. **Ошибки базы данных**: проверьте права доступа к файлам .db
+
+### Получение помощи
+
+- Проверьте логи приложения
+- Убедитесь, что все зависимости установлены
+- Проверьте версию Python (требуется 3.11+)
+
+## 🚧 Планы развития
+
+- [ ] Интеграция с внешними базами данных (HMDB, KEGG, ChEBI)
+- [ ] Расширенная аналитика и статистика
+- [ ] Поддержка загрузки пользовательских данных
+- [ ] API для интеграции с другими приложениями
+- [ ] Мобильная версия интерфейса
+- [ ] Многоязычная поддержка
+
+## 📄 Лицензия
+
+Этот проект предназначен для образовательных целей. Используйте в соответствии с лицензиями внешних баз данных.
+
+## 🤝 Вклад в проект
+
+Мы приветствуем вклад в развитие проекта! Если у вас есть идеи по улучшению или вы нашли ошибки, создайте issue или pull request.
 
 ---
 
-**🧬 Metabolome Handbook** - Making metabolomics accessible for education!
+**🧬 Protein Site** - Делаем биохимию доступной для изучения!
