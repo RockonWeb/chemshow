@@ -24,38 +24,84 @@ sys.path.insert(0, str(config_dir))
 sys.path.insert(0, str(services_dir))
 sys.path.insert(0, str(components_dir))
 
-from .config.settings import (
+# Import from config/settings.py
+import sys
+from pathlib import Path
+
+# Ensure the parent directory is in the path for imports
+parent_dir = Path(__file__).parent.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+from config.settings import (
     UI_CONFIG, LOGGING_CONFIG, get_database_paths,
     SEARCH_CONFIG, SEARCH_PRESETS
 )
-from services.database import get_database_stats
-from services.search_service import search_service
-from components.styles import inject_styles
-from components.utils import create_stats_html, format_search_query
-from components.search_form import (
-    render_search_form, handle_search_form,
-    render_pagination, render_view_toggle,
-    render_results_header, render_close_details_buttons
-)
-from components.cards import (
-    render_metabolite_card, render_enzyme_card,
-    render_protein_card, render_carbohydrate_card,
-    render_lipid_card
-)
-from components.details import (
-    show_metabolite_details, show_enzyme_details,
-    show_protein_details, show_carbohydrate_details,
-    show_lipid_details
-)
-from components.visualization_3d import (
-    render_3d_structure,
-    check_dependencies, install_instructions,
-    render_advanced_visualization_interface,
-)
-from components.comparison import render_comparison_interface, comparison_comparator
-from components.calculator import render_calculator_interface
-from components.analytics import render_analytics_dashboard
-from components.recommendations import render_recommendations_interface
+try:
+    from services.database import get_database_stats
+    from services.search_service import search_service
+except ImportError:
+    # Fallback for when running from different directories
+    from services.database import get_database_stats
+    from services.search_service import search_service
+try:
+    from components.styles import inject_styles
+    from components.utils import create_stats_html, format_search_query
+except ImportError:
+    # Fallback for when running from different directories
+    from components.styles import inject_styles
+    from components.utils import create_stats_html, format_search_query
+try:
+    from components.search_form import (
+        render_search_form, handle_search_form,
+        render_pagination, render_view_toggle,
+        render_results_header, render_close_details_buttons
+    )
+    from components.cards import (
+        render_metabolite_card, render_enzyme_card,
+        render_protein_card, render_carbohydrate_card,
+        render_lipid_card
+    )
+    from components.details import (
+        show_metabolite_details, show_enzyme_details,
+        show_protein_details, show_carbohydrate_details,
+        show_lipid_details
+    )
+    from components.visualization_3d import (
+        render_3d_structure,
+        check_dependencies, install_instructions,
+        render_advanced_visualization_interface,
+    )
+    from components.comparison import render_comparison_interface, comparison_comparator
+    from components.calculator import render_calculator_interface
+    from components.analytics import render_analytics_dashboard
+    from components.recommendations import render_recommendations_interface
+except ImportError:
+    # Fallback for when running from different directories
+    from search_form import (
+        render_search_form, handle_search_form,
+        render_pagination, render_view_toggle,
+        render_results_header, render_close_details_buttons
+    )
+    from cards import (
+        render_metabolite_card, render_enzyme_card,
+        render_protein_card, render_carbohydrate_card,
+        render_lipid_card
+    )
+    from details import (
+        show_metabolite_details, show_enzyme_details,
+        show_protein_details, show_carbohydrate_details,
+        show_lipid_details
+    )
+    from visualization_3d import (
+        render_3d_structure,
+        check_dependencies, install_instructions,
+        render_advanced_visualization_interface,
+    )
+    from comparison import render_comparison_interface, comparison_comparator
+    from calculator import render_calculator_interface
+    from analytics import render_analytics_dashboard
+    from recommendations import render_recommendations_interface
 
 # Настройка логирования
 logging.basicConfig(

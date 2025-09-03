@@ -17,9 +17,14 @@ logger = logging.getLogger(__name__)
 
 # Импорт вспомогательных функций
 try:
-    from .utils import get_display_name, safe_get_value, format_mass
+    # Try absolute import first
+    from components.utils import get_display_name, safe_get_value, format_mass
 except ImportError:
-    from utils import get_display_name, safe_get_value, format_mass
+    # Fallback to relative import
+    try:
+        from .utils import get_display_name, safe_get_value, format_mass
+    except ImportError:
+        from utils import get_display_name, safe_get_value, format_mass
 
 
 class AnalyticsDashboard:
@@ -31,6 +36,10 @@ class AnalyticsDashboard:
     def load_database_stats(self) -> Dict[str, Any]:
         """Загрузка статистики из всех баз данных"""
         try:
+            # Try absolute import first
+            from config.settings import DATABASE_PATHS
+        except ImportError:
+            # Fallback to relative import
             from ..config.settings import DATABASE_PATHS
 
             stats = {

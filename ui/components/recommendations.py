@@ -21,9 +21,14 @@ logger = logging.getLogger(__name__)
 
 # Импорт вспомогательных функций
 try:
-    from .utils import get_display_name, safe_get_value, format_mass
+    # Try absolute import first
+    from components.utils import get_display_name, safe_get_value, format_mass
 except ImportError:
-    from utils import get_display_name, safe_get_value, format_mass
+    # Fallback to relative import
+    try:
+        from .utils import get_display_name, safe_get_value, format_mass
+    except ImportError:
+        from utils import get_display_name, safe_get_value, format_mass
 
 # Проверяем доступность RDKit для продвинутых расчетов
 try:
@@ -50,6 +55,10 @@ class RecommendationsEngine:
         Поиск похожих соединений на основе различных критериев
         """
         try:
+            # Try absolute import first
+            from config.settings import DATABASE_PATHS
+        except ImportError:
+            # Fallback to relative import
             from ..config.settings import DATABASE_PATHS
 
             if database_type not in DATABASE_PATHS:
@@ -464,6 +473,10 @@ def render_recommendations_interface():
     if selected_db:
         # Загружаем соединения из выбранной базы
         try:
+            # Try absolute import first
+            from config.settings import DATABASE_PATHS
+        except ImportError:
+            # Fallback to relative import
             from ..config.settings import DATABASE_PATHS
 
             db_path = DATABASE_PATHS[selected_db]
