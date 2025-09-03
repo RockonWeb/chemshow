@@ -8,30 +8,6 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 import hashlib
 import os
-import py3Dmol
-# Настройка логирования
-logger = logging.getLogger(__name__)
-
-# Попытка импорта rdkit
-try:
-    from rdkit import Chem
-    from rdkit.Chem import AllChem, Draw
-    RDKIT_AVAILABLE = True
-except ImportError:
-    logger.warning("rdkit не установлен. 3D-визуализация будет ограничена.")
-    RDKIT_AVAILABLE = False
-    Chem = None
-    AllChem = None
-
-# Попытка импорта Py3Dmol
-try:
-    import py3Dmol
-    PY3DMOL_AVAILABLE = True
-except ImportError:
-    logger.warning("Py3Dmol не установлен. 3D-визуализация недоступна.")
-    PY3DMOL_AVAILABLE = False
-    py3Dmol = None
-
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -369,7 +345,7 @@ def render_3d_structure(smiles: str, title: str = "3D Структура мол�
                         # Адаптивный размер изображения для альтернативного режима
                         img_size = min(300, 250)  # Компактный размер
                         img = Draw.MolToImage(mol, size=(img_size, img_size))
-                        st.image(img, caption="2D структура молекулы", use_container_width=True)
+                        st.image(img, caption="2D структура молекулы", width='stretch')
 
                     with col2:
                         st.markdown("**Свойства молекулы:**")
