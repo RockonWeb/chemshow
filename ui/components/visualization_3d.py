@@ -148,29 +148,74 @@ def smiles_to_3d(smiles: str) -> Optional[str]:
                 logger.error(f"Не удалось распарсить SMILES: {smiles}")
             return None
 
-        # Добавляем водороды
-        mol = Chem.AddHs(mol)
+        # Проверяем, содержит ли SMILES явные водороды
+        has_explicit_hydrogens = '[H]' in smiles
+
+        if not has_explicit_hydrogens:
+            # Добавляем водороды только если они не указаны явно
+            mol = Chem.AddHs(mol)
+            logger.info(f"Добавлены неявные водороды для {smiles}")
+        else:
+            # Для SMILES с явными водородами проверяем валидность
+            logger.info(f"Обнаружены явные водороды в SMILES: {smiles}")
+
+            # Проверяем, что все атомы имеют правильную валентность
+            try:
+                Chem.SanitizeMol(mol)
+                logger.info(f"SMILES с явными водородами прошел валидацию: {smiles}")
+            except Exception as e:
+                logger.warning(f"Проблема с валентностью в SMILES: {smiles}, ошибка: {e}")
+                # Пробуем исправить валентность
+                try:
+                    Chem.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_NONE)
+                    logger.info(f"SMILES исправлен: {smiles}")
+                except Exception as e2:
+                    logger.error(f"Не удалось исправить SMILES: {smiles}, ошибка: {e2}")
+                    return None
 
         # Генерируем 3D координаты
         result = AllChem.EmbedMolecule(mol, randomSeed=42)
         if result == -1:
-            logger.warning(f"Не удалось сгенерировать 3D структуру для {smiles}")
+            logger.warning(f"Не удалось сгенерировать 3D структуру для {smiles}, пробуем альтернативные методы")
+
             # Пробуем с другими параметрами
             result = AllChem.EmbedMolecule(mol, randomSeed=42, useRandomCoords=True)
             if result == -1:
-                logger.error(f"Повторная генерация 3D структуры не удалась для {smiles}")
-                return None
+                logger.warning(f"Повторная генерация не удалась, пробуем ETKDG метод")
+                # Пробуем ETKDG метод (более надежный для сложных структур)
+                try:
+                    params = AllChem.ETKDGv3()
+                    params.randomSeed = 42
+                    result = AllChem.EmbedMolecule(mol, params)
+                    if result == -1:
+                        logger.error(f"Все методы генерации 3D структуры не удались для {smiles}")
+                        return None
+                except Exception as e:
+                    logger.error(f"Ошибка ETKDG метода для {smiles}: {e}")
+                    return None
 
         # Оптимизируем геометрию
-        AllChem.MMFFOptimizeMolecule(mol)
+        try:
+            optimize_result = AllChem.MMFFOptimizeMolecule(mol)
+            if optimize_result == -1:
+                logger.warning(f"Не удалось оптимизировать геометрию для {smiles}, используем без оптимизации")
+            else:
+                logger.info(f"Геометрия оптимизирована для {smiles}")
+        except Exception as e:
+            logger.warning(f"Ошибка оптимизации геометрии для {smiles}: {e}, продолжаем без оптимизации")
 
         # Конвертируем в PDB формат
         pdb_data = Chem.MolToPDBBlock(mol)
 
+        # Проверяем, что PDB данные корректны
+        if not pdb_data or len(pdb_data.strip()) < 50:
+            logger.error(f"Сгенерированные PDB данные некорректны для {smiles}")
+            return None
+
         # Кэшируем результат
         cache_structure_file(smiles, pdb_data)
 
-        logger.info(f"Сгенерирована 3D структура для {smiles}")
+        logger.info(f"Сгенерирована 3D структура для {smiles} ({len(pdb_data)} символов)")
         return pdb_data
 
     except Exception as e:
@@ -220,7 +265,20 @@ def create_3d_visualization_alternative(pdb_data: str, width: int = 600, height:
             return create_fallback_visualization(width, height, "Нет PDB данных")
 
         # Экранируем PDB данные для JavaScript
-        escaped_pdb = pdb_data.replace('`', '\\`').replace('${', '\\${')
+        escaped_pdb = pdb_data.replace('`', '\\`').replace('${', '\\${').replace('\\', '\\\\')
+
+        # Проверяем длину PDB данных
+        if len(escaped_pdb) > 10000:
+            logger.warning(f"PDB данные слишком длинные ({len(escaped_pdb)} символов), могут вызвать проблемы с отображением")
+
+        # Проверяем, что PDB данные содержат корректные заголовки
+        if not (escaped_pdb.strip().startswith('HEADER') or
+                escaped_pdb.strip().startswith('ATOM') or
+                escaped_pdb.strip().startswith('HETATM') or
+                'HETATM' in escaped_pdb[:200]):
+            logger.warning(f"PDB данные могут быть некорректными: {escaped_pdb[:100]}...")
+        else:
+            logger.info(f"PDB данные содержат корректные записи (ATOM/HETATM/HEADER)")
 
         # Создаем HTML по частям для избежания проблем с f-строками
         html_parts = [
@@ -280,8 +338,22 @@ def create_3d_visualization_alternative(pdb_data: str, width: int = 600, height:
             '                });',
             '',
             '                const pdbData = `' + escaped_pdb + '`;',
+            '                console.log(\'PDB data length:\', pdbData.length);',
+            '                console.log(\'PDB data preview:\', pdbData.substring(0, 200));',
             '',
             '                viewer.addModel(pdbData, \'pdb\');',
+            '                console.log(\'Model added successfully\');',
+            '',
+            '                // Проверяем, что модель загружена',
+            '                const atoms = viewer.getModel().selectedAtoms({});',
+            '                console.log(\'Number of atoms loaded:\', atoms.length);',
+            '',
+            '                if (atoms.length === 0) {',
+            '                    console.warn(\'No atoms loaded, trying alternative format\');',
+            '                    viewer.clear();',
+            '                    viewer.addModel(pdbData, \'mol\');',
+            '                    console.log(\'Tried alternative mol format\');',
+            '                }'',
             '                viewer.setStyle({\'stick\': {\'colorscheme\': \'Jmol\'}});',
             '                viewer.zoomTo();',
             '                viewer.render();',
@@ -370,7 +442,25 @@ def render_3d_structure(smiles: str, title: str = "3D Структура мол�
     with st.spinner("Генерация структуры..."):
         pdb_data = smiles_to_3d(smiles.strip())
 
+        # Отладочная информация
+        if pdb_data:
+            st.info(f"✅ Успешно сгенерирована 3D структура для SMILES: {smiles}")
+            st.text(f"PDB данные ({len(pdb_data)} символов):")
+            with st.expander("Показать PDB данные", expanded=False):
+                st.code(pdb_data[:1000] + "..." if len(pdb_data) > 1000 else pdb_data)
+        else:
+            st.warning(f"❌ Не удалось сгенерировать 3D структуру для SMILES: {smiles}")
+
     if pdb_data:
+        # Информация для отладки
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🐛 Отладка", help="Показать отладочную информацию"):
+                st.info("**Отладочная информация:**\n"
+                       "- Откройте консоль браузера (F12)\n"
+                       "- Ищите сообщения о PDB данных\n"
+                       "- Проверьте ошибки JavaScript")
+
         # Адаптивные размеры для 3D визуализации
         container_width = min(width, 800)  # Максимум 800px
         container_height = min(height, 500)  # Максимум 500px
@@ -381,7 +471,17 @@ def render_3d_structure(smiles: str, title: str = "3D Структура мол�
         )
         
         # Отображаем 3D визуализацию в адаптивном контейнере
-        components.html(html_content, height=container_height, width=container_width, scrolling=False)
+        try:
+            components.html(html_content, height=container_height, width=container_width, scrolling=False)
+        except Exception as e:
+            logger.error(f"Ошибка отображения 3D визуализации: {e}")
+            st.error("❌ Ошибка отображения 3D визуализации")
+
+            # Резервный вариант - показать PDB данные в текстовом виде
+            st.subheader("📄 PDB данные (резервный вариант)")
+            st.code(pdb_data, language="text")
+
+            st.info("💡 **Совет:** Попробуйте другой SMILES или проверьте консоль браузера (F12) для отладочной информации")
 
 
 
