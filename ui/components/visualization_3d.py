@@ -8,6 +8,30 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 import hashlib
 import os
+import py3Dmol
+# Настройка логирования
+logger = logging.getLogger(__name__)
+
+# Попытка импорта rdkit
+try:
+    from rdkit import Chem
+    from rdkit.Chem import AllChem, Draw
+    RDKIT_AVAILABLE = True
+except ImportError:
+    logger.warning("rdkit не установлен. 3D-визуализация будет ограничена.")
+    RDKIT_AVAILABLE = False
+    Chem = None
+    AllChem = None
+
+# Попытка импорта Py3Dmol
+try:
+    import py3Dmol
+    PY3DMOL_AVAILABLE = True
+except ImportError:
+    logger.warning("Py3Dmol не установлен. 3D-визуализация недоступна.")
+    PY3DMOL_AVAILABLE = False
+    py3Dmol = None
+
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -16,7 +40,6 @@ logger = logging.getLogger(__name__)
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem, Draw
-    from rdkit.Chem.Draw import rdMolDraw2D
     RDKIT_AVAILABLE = True
 except ImportError:
     logger.warning("rdkit не установлен. 3D-визуализация будет ограничена.")
