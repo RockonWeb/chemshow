@@ -9,6 +9,44 @@ from .utils import (
 )
 from .comparison import add_to_comparison_button, comparison_comparator
 
+# Импорт функции для безопасного открытия диалогов
+try:
+    from ..main import open_dialog_safely
+except ImportError:
+    # Fallback для случаев, когда main.py не доступен
+    def open_dialog_safely(dialog_type: str, entity: Dict[str, Any]):
+        """Резервная функция открытия диалога"""
+        # Закрываем все диалоги
+        st.session_state.show_metabolite_details = False
+        st.session_state.show_enzyme_details = False
+        st.session_state.show_protein_details = False
+        st.session_state.show_carbohydrate_details = False
+        st.session_state.show_lipid_details = False
+
+        # Очищаем выбранные элементы
+        st.session_state.selected_metabolite = None
+        st.session_state.selected_enzyme = None
+        st.session_state.selected_protein = None
+        st.session_state.selected_carbohydrate = None
+        st.session_state.selected_lipid = None
+
+        # Открываем нужный диалог
+        if dialog_type == "metabolite":
+            st.session_state.selected_metabolite = entity
+            st.session_state.show_metabolite_details = True
+        elif dialog_type == "enzyme":
+            st.session_state.selected_enzyme = entity
+            st.session_state.show_enzyme_details = True
+        elif dialog_type == "protein":
+            st.session_state.selected_protein = entity
+            st.session_state.show_protein_details = True
+        elif dialog_type == "carbohydrate":
+            st.session_state.selected_carbohydrate = entity
+            st.session_state.show_carbohydrate_details = True
+        elif dialog_type == "lipid":
+            st.session_state.selected_lipid = entity
+            st.session_state.show_lipid_details = True
+
 
 def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
     """Карточка метаболита с ссылками и кнопкой деталей"""
@@ -50,9 +88,8 @@ def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Открываем детали метаболита
-            st.session_state.show_metabolite_details = True
-            st.session_state.selected_metabolite = metabolite
+            # Используем безопасную функцию открытия диалога
+            open_dialog_safely("metabolite", metabolite)
 
     with col2:
         add_to_comparison_button(metabolite, "metabolites", comparison_comparator)
@@ -100,9 +137,8 @@ def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Открываем детали фермента
-            st.session_state.show_enzyme_details = True
-            st.session_state.selected_enzyme = enzyme
+            # Используем безопасную функцию открытия диалога
+            open_dialog_safely("enzyme", enzyme)
 
     with col2:
         add_to_comparison_button(enzyme, "enzymes", comparison_comparator)
@@ -151,9 +187,8 @@ def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Открываем детали белка
-            st.session_state.show_protein_details = True
-            st.session_state.selected_protein = protein
+            # Используем безопасную функцию открытия диалога
+            open_dialog_safely("protein", protein)
 
     with col2:
         add_to_comparison_button(protein, "proteins", comparison_comparator)
@@ -190,9 +225,8 @@ def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> Non
     col1, col2 = st.columns(2)
     with col1:
         if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Открываем детали углевода
-            st.session_state.show_carbohydrate_details = True
-            st.session_state.selected_carbohydrate = carbohydrate
+            # Используем безопасную функцию открытия диалога
+            open_dialog_safely("carbohydrate", carbohydrate)
 
     with col2:
         add_to_comparison_button(carbohydrate, "carbohydrates", comparison_comparator)
@@ -229,9 +263,8 @@ def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("📋 Показать детали", key=card_key, width='stretch'):
-            # Открываем детали липида
-            st.session_state.show_lipid_details = True
-            st.session_state.selected_lipid = lipid
+            # Используем безопасную функцию открытия диалога
+            open_dialog_safely("lipid", lipid)
 
     with col2:
         add_to_comparison_button(lipid, "lipids", comparison_comparator)
