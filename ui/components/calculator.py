@@ -184,7 +184,7 @@ class MolecularCalculator:
     def create_properties_table(self, properties: Dict[str, Any]) -> pd.DataFrame:
         """Создание таблицы свойств"""
         if "error" in properties:
-            return pd.DataFrame({"Свойство": ["Ошибка"], "Значение": [properties["error"]]})
+            return pd.DataFrame({"Свойство": ["Ошибка"], "Значение": [str(properties["error"])]})
 
         # Группировка свойств
         basic_props = {
@@ -219,7 +219,7 @@ class MolecularCalculator:
 
         df_data = {
             "Свойство": list(all_props.keys()),
-            "Значение": list(all_props.values())
+            "Значение": [str(value) for value in all_props.values()]
         }
 
         return pd.DataFrame(df_data)

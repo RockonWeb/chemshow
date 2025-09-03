@@ -503,9 +503,9 @@ def render_recommendations_interface():
                         for comp, similarity in results:
                             result_data.append({
                                 "Название": comp.get('name', '—'),
-                                "Схожесть": ".1%",
+                                "Схожесть": f"{similarity:.1%}",
                                 "Формула": comp.get('formula', '—'),
-                                "Масса (Da)": ".2f" if comp.get('exact_mass') else "—",
+                                "Масса (Da)": f"{comp.get('exact_mass', 0):.2f}" if comp.get('exact_mass') else "—",
                                 "Объяснение": engine.get_recommendation_explanation(target, comp, similarity)
                             })
 
@@ -575,7 +575,7 @@ def render_recommendations_interface():
                                             cluster_data.append({
                                                 "Название": comp.get('name', '—'),
                                                 "Формула": comp.get('formula', '—'),
-                                                "Масса": ".2f" if comp.get('exact_mass') else "—"
+                                                "Масса": f"{comp.get('exact_mass', 0):.2f}" if comp.get('exact_mass') else "—"
                                             })
 
                                         if cluster_data:
