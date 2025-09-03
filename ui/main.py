@@ -14,11 +14,6 @@ import streamlit as st
 import pandas as pd
 import logging
 from typing import Dict, Any
-from pathlib import Path
-
-# Импорты из созданных модулей
-import sys
-from pathlib import Path
 
 # Добавляем пути для корректных импортов
 config_dir = Path(__file__).parent / "config"
@@ -455,7 +450,8 @@ def main():
     inject_styles()
 
     with st.expander("🧪 Диагностика среды"):
-        import sys, import importlib.metadata as im
+        import sys 
+        import importlib.metadata as im
         st.write("Python:", sys.version)
         st.write("Exec:", sys.executable)
         try:
