@@ -314,7 +314,7 @@ def show_metabolite_details(metabolite: Dict[str, Any]) -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
-        if st.button("Копировать", key="copy_metabolite_modal", use_container_width=True):
+        if st.button("Копировать", key="copy_metabolite_modal", width='stretch'):
             # Имитируем копирование данных
             data_to_copy = f"""
 Название: {display_name}
@@ -326,7 +326,7 @@ def show_metabolite_details(metabolite: Dict[str, Any]) -> None:
             st.success("✅ Данные скопированы!")
 
     with col2:
-        if st.button("Обновить", key="refresh_metabolite_modal", use_container_width=True):
+        if st.button("Обновить", key="refresh_metabolite_modal", width='stretch'):
             st.rerun()
 
     with col3:
@@ -401,7 +401,7 @@ def show_enzyme_details(enzyme: Dict[str, Any]) -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
-        if st.button("Копировать", key="copy_enzyme_modal", use_container_width=True):
+        if st.button("Копировать", key="copy_enzyme_modal", width='stretch'):
             data_to_copy = f"""
 Название: {display_name}
 EC номер: {ec_number}
@@ -411,7 +411,7 @@ EC номер: {ec_number}
             st.success("✅ Данные скопированы!")
 
     with col2:
-        if st.button("Обновить", key="refresh_enzyme_modal", use_container_width=True):
+        if st.button("Обновить", key="refresh_enzyme_modal", width='stretch'):
             st.rerun()
 
     with col3:
@@ -476,7 +476,7 @@ def show_protein_details(protein: Dict[str, Any]) -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
-        if st.button("Копировать", key="copy_protein_modal", use_container_width=True):
+        if st.button("Копировать", key="copy_protein_modal", width='stretch'):
             data_to_copy = f"""
 Название: {display_name}
 Функция: {safe_get_value(protein, 'function', 'Не указано')}
@@ -486,7 +486,7 @@ def show_protein_details(protein: Dict[str, Any]) -> None:
             st.success("✅ Данные скопированы!")
 
     with col2:
-        if st.button("Обновить", key="refresh_protein_modal", use_container_width=True):
+        if st.button("Обновить", key="refresh_protein_modal", width='stretch'):
             st.rerun()
 
     with col3:
@@ -543,7 +543,7 @@ def show_carbohydrate_details(carbohydrate: Dict[str, Any]) -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
-        if st.button("Копировать", key="copy_carbohydrate_modal", use_container_width=True):
+        if st.button("Копировать", key="copy_carbohydrate_modal", width='stretch'):
             data_to_copy = f"""
 Название: {display_name}
 Формула: {safe_get_value(carbohydrate, 'formula', 'Не указано')}
@@ -553,11 +553,11 @@ def show_carbohydrate_details(carbohydrate: Dict[str, Any]) -> None:
             st.success("✅ Данные скопированы!")
 
     with col2:
-        if st.button("Обновить", key="refresh_carbohydrate_modal", use_container_width=True):
+        if st.button("Обновить", key="refresh_carbohydrate_modal", width='stretch'):
             st.rerun()
 
     with col3:
-        if st.button("❌ Закрыть", key="close_carbohydrate_modal", type="primary", use_container_width=True):
+        if st.button("❌ Закрыть", key="close_carbohydrate_modal", type="primary", width='stretch'):
             # Закрываем все диалоги
             st.session_state.show_metabolite_details = False
             st.session_state.show_enzyme_details = False
@@ -611,7 +611,7 @@ def show_lipid_details(lipid: Dict[str, Any]) -> None:
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
-        if st.button("Копировать", key="copy_lipid_modal", use_container_width=True):
+        if st.button("Копировать", key="copy_lipid_modal", width='stretch'):
             data_to_copy = f"""
 Название: {display_name}
 Формула: {safe_get_value(lipid, 'formula', 'Не указано')}
@@ -621,11 +621,11 @@ def show_lipid_details(lipid: Dict[str, Any]) -> None:
             st.success("✅ Данные скопированы!")
 
     with col2:
-        if st.button("Обновить", key="refresh_lipid_modal", use_container_width=True):
+        if st.button("Обновить", key="refresh_lipid_modal", width='stretch'):
             st.rerun()
 
     with col3:
-        if st.button("❌ Закрыть", key="close_lipid_modal", type="primary", use_container_width=True):
+        if st.button("❌ Закрыть", key="close_lipid_modal", type="primary", width='stretch'):
             # Закрываем все диалоги
             st.session_state.show_metabolite_details = False
             st.session_state.show_enzyme_details = False

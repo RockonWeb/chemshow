@@ -341,7 +341,7 @@ def render_analytics_dashboard():
     # Кнопка обновления данных
     col1, col2 = st.columns([1, 4])
     with col1:
-        if st.button("🔄 Обновить данные", use_container_width=True):
+        if st.button("🔄 Обновить данные", width='stretch'):
             st.cache_data.clear()
             st.rerun()
 
@@ -367,28 +367,28 @@ def render_analytics_dashboard():
     with tab1:
         chart = dashboard.create_compounds_distribution_chart(stats)
         if chart:
-            st.plotly_chart(chart, use_container_width=True)
+            st.plotly_chart(chart, width='stretch')
         else:
             st.info("Данные для диаграммы распределения недоступны")
 
     with tab2:
         chart = dashboard.create_mass_distribution_chart(stats)
         if chart:
-            st.plotly_chart(chart, use_container_width=True)
+            st.plotly_chart(chart, width='stretch')
         else:
             st.info("Данные о молекулярных массах недоступны")
 
     with tab3:
         chart = dashboard.create_organism_distribution_chart(stats)
         if chart:
-            st.plotly_chart(chart, use_container_width=True)
+            st.plotly_chart(chart, width='stretch')
         else:
             st.info("Данные об организмах недоступны")
 
     with tab4:
         chart = dashboard.create_class_distribution_chart(stats)
         if chart:
-            st.plotly_chart(chart, use_container_width=True)
+            st.plotly_chart(chart, width='stretch')
         else:
             st.info("Данные о классах метаболитов недоступны")
 
@@ -399,7 +399,7 @@ def render_analytics_dashboard():
     if not db_table.empty:
         st.dataframe(
             db_table,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             column_config={
                 "База данных": st.column_config.TextColumn(width="medium"),
@@ -422,7 +422,7 @@ def render_analytics_dashboard():
                 data=csv_data,
                 file_name="database_statistics.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
 
         with col2:
@@ -434,7 +434,7 @@ def render_analytics_dashboard():
                 data=json_data,
                 file_name="database_statistics.json",
                 mime="application/json",
-                use_container_width=True
+                width='stretch'
             )
     else:
         st.warning("Информация о базах данных недоступна")

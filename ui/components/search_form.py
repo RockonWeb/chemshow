@@ -50,7 +50,7 @@ def render_search_form() -> Dict[str, Any]:
         )
 
         # Кнопка поиска
-        search_submitted = st.form_submit_button("🔍 Найти", use_container_width=True, type="primary")
+        search_submitted = st.form_submit_button("🔍 Найти", width='stretch', type="primary")
 
         # Дополнительные настройки
         with st.expander("⚙️ Дополнительные настройки", expanded=False):
@@ -102,25 +102,25 @@ def render_search_form() -> Dict[str, Any]:
         with presets_col1:
             preset_buttons["glucose"] = st.form_submit_button(
                 "Глюкоза",
-                use_container_width=True
+                width='stretch'
             )
 
         with presets_col2:
             preset_buttons["dehydrogenase"] = st.form_submit_button(
                 "Dehydrogenase",
-                use_container_width=True
+                width='stretch'
             )
 
         with presets_col3:
             preset_buttons["formaldehyde"] = st.form_submit_button(
                 "Formaldehyde",
-                use_container_width=True
+                width='stretch'
             )
 
         with presets_col4:
             preset_buttons["atp"] = st.form_submit_button(
                 "ATP",
-                use_container_width=True
+                width='stretch'
             )
 
         # Определяем, какая кнопка была нажата
@@ -278,7 +278,7 @@ def render_close_details_buttons() -> Dict[str, bool]:
             buttons_pressed["close_metabolite"] = st.button(
                 "❌ Закрыть детали",
                 key="close_met_details",
-                use_container_width=True
+                width='stretch'
             )
 
     # Кнопка закрытия деталей фермента
@@ -288,7 +288,7 @@ def render_close_details_buttons() -> Dict[str, bool]:
             buttons_pressed["close_enzyme"] = st.button(
                 "❌ Закрыть детали",
                 key="close_enz_details",
-                use_container_width=True
+                width='stretch'
             )
 
     # Кнопка закрытия деталей белка
@@ -298,7 +298,7 @@ def render_close_details_buttons() -> Dict[str, bool]:
             buttons_pressed["close_protein"] = st.button(
                 "❌ Закрыть детали",
                 key="close_prot_details",
-                use_container_width=True
+                width='stretch'
             )
 
     # Кнопка закрытия деталей углевода
@@ -308,7 +308,7 @@ def render_close_details_buttons() -> Dict[str, bool]:
             buttons_pressed["close_carbohydrate"] = st.button(
                 "❌ Закрыть детали",
                 key="close_carb_details",
-                use_container_width=True
+                width='stretch'
             )
 
     # Кнопка закрытия деталей липида
@@ -318,7 +318,7 @@ def render_close_details_buttons() -> Dict[str, bool]:
             buttons_pressed["close_lipid"] = st.button(
                 "❌ Закрыть детали",
                 key="close_lip_details",
-                use_container_width=True
+                width='stretch'
             )
 
     return buttons_pressed

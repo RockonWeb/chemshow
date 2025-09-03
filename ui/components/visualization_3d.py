@@ -128,7 +128,24 @@ def smiles_to_3d(smiles: str) -> Optional[str]:
         # Создаем молекулу из SMILES
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
-            logger.error(f"Не удалось распарсить SMILES: {smiles}")
+            # Предоставляем более понятное сообщение об ошибке
+            common_abbreviations = {
+                'ATP': 'Adenosine Triphosphate',
+                'ADP': 'Adenosine Diphosphate',
+                'GTP': 'Guanosine Triphosphate',
+                'GDP': 'Guanosine Diphosphate',
+                'NAD': 'Nicotinamide Adenine Dinucleotide',
+                'NADH': 'Nicotinamide Adenine Dinucleotide (reduced)',
+                'FAD': 'Flavin Adenine Dinucleotide',
+                'FADH2': 'Flavin Adenine Dinucleotide (reduced)',
+                'DNA': 'Deoxyribonucleic Acid',
+                'RNA': 'Ribonucleic Acid'
+            }
+
+            if smiles.upper() in common_abbreviations:
+                logger.error(f"Обнаружена аббревиатура вместо SMILES: {smiles} ({common_abbreviations[smiles.upper()]})")
+            else:
+                logger.error(f"Не удалось распарсить SMILES: {smiles}")
             return None
 
         # Добавляем водороды
@@ -370,7 +387,26 @@ def render_3d_structure(smiles: str, title: str = "3D Структура мол�
 
 
     else:
-        st.error("❌ Не удалось сгенерировать 3D структуру молекулы")
+        # Предоставляем более понятное сообщение об ошибке
+        common_abbreviations = {
+            'ATP': 'Adenosine Triphosphate',
+            'ADP': 'Adenosine Diphosphate',
+            'GTP': 'Guanosine Triphosphate',
+            'GDP': 'Guanosine Diphosphate',
+            'NAD': 'Nicotinamide Adenine Dinucleotide',
+            'NADH': 'Nicotinamide Adenine Dinucleotide (reduced)',
+            'FAD': 'Flavin Adenine Dinucleotide',
+            'FADH2': 'Flavin Adenine Dinucleotide (reduced)',
+            'DNA': 'Deoxyribonucleic Acid',
+            'RNA': 'Ribonucleic Acid'
+        }
+
+        if smiles.upper() in common_abbreviations:
+            st.error(f"❌ '{smiles}' - это аббревиатура ({common_abbreviations[smiles.upper()]}), а не SMILES строка")
+            st.info("💡 **Подсказка:** Введите правильную SMILES строку, например: 'CC(=O)O' для уксусной кислоты")
+        else:
+            st.error(f"❌ Не удалось распарсить SMILES строку: '{smiles}'")
+            st.info("💡 **Подсказка:** Проверьте корректность SMILES строки. Примеры: 'CC(=O)O', 'C1CCCCC1', 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'")
 
         # Показываем 2D структуру если доступно
         if RDKIT_AVAILABLE:
@@ -514,7 +550,7 @@ def render_2d_structure(smiles: str, title: str = "2D Структура мол�
 
         with col1:
 
-            st.image(img, caption="2D структура молекулы", use_container_width=True)
+            st.image(img, caption="2D структура молекулы", width='stretch')
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col2:
@@ -740,7 +776,7 @@ def render_advanced_visualization_interface():
         smiles_list = [smiles_input] if smiles_input else []
 
     # Кнопка визуализации
-    if st.button("🎨 Визуализировать", type="primary", use_container_width=True):
+    if st.button("🎨 Визуализировать", type="primary", width='stretch'):
         if not smiles_list or not any(smiles_list):
             st.error("❌ Введите хотя бы одну SMILES строку")
             return
@@ -748,7 +784,7 @@ def render_advanced_visualization_interface():
         with st.spinner("Генерирую визуализацию..."):
             try:
                 if vis_mode == "3D структура":
-                    render_3d_structure(smiles_input, style=vis_style, color=color_scheme)
+                    render_3d_structure(smiles_input)
 
                 elif vis_mode == "2D структура":
                     render_2d_structure(smiles_input)
@@ -955,25 +991,25 @@ def render_editing_tools(smiles: str):
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            if st.button("⚛️ Добавить водороды", use_container_width=True):
+            if st.button("⚛️ Добавить водороды", width='stretch'):
                 mol_h = Chem.AddHs(mol)
                 smiles_h = Chem.MolToSmiles(mol_h)
                 st.code(f"SMILES с водородами:\n{smiles_h}")
 
         with col2:
-            if st.button("🧹 Удалить стереохимию", use_container_width=True):
+            if st.button("🧹 Удалить стереохимию", width='stretch'):
                 mol_clean = Chem.MolFromSmiles(Chem.MolToSmiles(mol, isomericSmiles=False))
                 if mol_clean:
                     smiles_clean = Chem.MolToSmiles(mol_clean, isomericSmiles=False)
                     st.code(f"SMILES без стереохимии:\n{smiles_clean}")
 
         with col3:
-            if st.button("🔄 Канонизировать", use_container_width=True):
+            if st.button("🔄 Канонизировать", width='stretch'):
                 canonical_smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles), canonical=True)
                 st.code(f"Канонический SMILES:\n{canonical_smiles}")
 
         with col4:
-            if st.button("📊 Свойства", use_container_width=True):
+            if st.button("📊 Свойства", width='stretch'):
                 # Отображаем свойства в expander
                 with st.expander("Молекулярные свойства", expanded=True):
                     props = calculate_molecular_properties(smiles)

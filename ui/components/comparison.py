@@ -241,13 +241,13 @@ def render_comparison_interface(comparator: CompoundComparator):
 
     with col2:
         if comparator.selected_compounds:
-            if st.button("🗑️ Очистить все", use_container_width=True):
+            if st.button("🗑️ Очистить все", width='stretch'):
                 comparator.clear_all()
                 st.rerun()
 
     with col3:
         if len(comparator.selected_compounds) >= 2:
-            if st.button("📊 Показать сравнение", use_container_width=True, type="primary"):
+            if st.button("📊 Показать сравнение", width='stretch', type="primary"):
                 st.session_state.show_comparison = True
 
     # Показать сравнение если выбрано достаточно соединений
@@ -262,7 +262,7 @@ def render_comparison_interface(comparator: CompoundComparator):
         if not comparison_df.empty:
             st.dataframe(
                 comparison_df,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
 
@@ -273,7 +273,7 @@ def render_comparison_interface(comparator: CompoundComparator):
                 data=csv,
                 file_name="compound_comparison.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
 
         # Диаграммы сравнения
@@ -284,15 +284,15 @@ def render_comparison_interface(comparator: CompoundComparator):
         with col1:
             mass_chart = comparator.create_mass_comparison_chart()
             if mass_chart:
-                st.plotly_chart(mass_chart, use_container_width=True)
+                st.plotly_chart(mass_chart, width='stretch')
 
         with col2:
             radar_chart = comparator.create_property_radar_chart()
             if radar_chart:
-                st.plotly_chart(radar_chart, use_container_width=True)
+                st.plotly_chart(radar_chart, width='stretch')
 
         # Кнопка закрытия
-        if st.button("🔙 Вернуться к выбору", use_container_width=True):
+        if st.button("🔙 Вернуться к выбору", width='stretch'):
             st.session_state.show_comparison = False
             st.rerun()
 

@@ -274,7 +274,7 @@ def render_calculator_interface():
         )
 
     with col2:
-        if st.button("🔄 Рассчитать", use_container_width=True, type="primary"):
+        if st.button("🔄 Рассчитать", width='stretch', type="primary"):
             if smiles_input:
                 st.session_state.calculator_smiles = smiles_input
                 st.session_state.show_calculation = True
@@ -318,7 +318,7 @@ def render_calculator_interface():
                 props_table = calculator.create_properties_table(properties)
                 st.dataframe(
                     props_table,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Свойство": st.column_config.TextColumn(width="medium"),
@@ -354,7 +354,7 @@ def render_calculator_interface():
                     isotopic_chart = calculator.create_isotopic_chart(properties["isotopic_pattern"])
 
                     if isotopic_chart:
-                        st.plotly_chart(isotopic_chart, use_container_width=True)
+                        st.plotly_chart(isotopic_chart, width='stretch')
                     else:
                         st.info("Изотопный анализ не доступен для этой молекулы")
 
@@ -371,7 +371,7 @@ def render_calculator_interface():
                         data=csv_data,
                         file_name=f"molecular_properties_{properties.get('formula', 'molecule')}.csv",
                         mime="text/csv",
-                        use_container_width=True
+                        width='stretch'
                     )
 
                 with col2:
@@ -383,7 +383,7 @@ def render_calculator_interface():
                         data=json_data,
                         file_name=f"molecular_properties_{properties.get('formula', 'molecule')}.json",
                         mime="application/json",
-                        use_container_width=True
+                        width='stretch'
                     )
 
     # Информация о калькуляторе

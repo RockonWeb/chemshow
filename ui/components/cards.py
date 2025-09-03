@@ -49,7 +49,7 @@ def render_metabolite_card(metabolite: Dict[str, Any], card_key: str) -> None:
     # Кнопки действий
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+        if st.button("📋 Показать детали", key=card_key, width='stretch'):
             # Открываем детали метаболита
             st.session_state.show_metabolite_details = True
             st.session_state.selected_metabolite = metabolite
@@ -99,7 +99,7 @@ def render_enzyme_card(enzyme: Dict[str, Any], card_key: str) -> None:
     # Кнопки действий
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+        if st.button("📋 Показать детали", key=card_key, width='stretch'):
             # Открываем детали фермента
             st.session_state.show_enzyme_details = True
             st.session_state.selected_enzyme = enzyme
@@ -150,7 +150,7 @@ def render_protein_card(protein: Dict[str, Any], card_key: str) -> None:
     # Кнопки действий
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+        if st.button("📋 Показать детали", key=card_key, width='stretch'):
             # Открываем детали белка
             st.session_state.show_protein_details = True
             st.session_state.selected_protein = protein
@@ -189,7 +189,7 @@ def render_carbohydrate_card(carbohydrate: Dict[str, Any], card_key: str) -> Non
     # Кнопки действий
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+        if st.button("📋 Показать детали", key=card_key, width='stretch'):
             # Открываем детали углевода
             st.session_state.show_carbohydrate_details = True
             st.session_state.selected_carbohydrate = carbohydrate
@@ -228,7 +228,7 @@ def render_lipid_card(lipid: Dict[str, Any], card_key: str) -> None:
     # Кнопки действий
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Показать детали", key=card_key, use_container_width=True):
+        if st.button("📋 Показать детали", key=card_key, width='stretch'):
             # Открываем детали липида
             st.session_state.show_lipid_details = True
             st.session_state.selected_lipid = lipid

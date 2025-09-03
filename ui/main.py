@@ -304,7 +304,7 @@ def display_entity_table(entities: list, entity_type: str):
         df = pd.DataFrame(rows)
         st.dataframe(
             df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
         st.info("💡 **Совет:** Переключитесь в режим 'Карточки' для просмотра деталей")

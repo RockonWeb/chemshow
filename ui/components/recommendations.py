@@ -475,7 +475,7 @@ def render_recommendations_interface():
                         min_similarity = st.slider("Минимальная схожесть (%):", 0, 100, 30) / 100.0
 
                     # Поиск рекомендаций
-                    if st.button("🔍 Найти похожие соединения", type="primary", use_container_width=True):
+                    if st.button("🔍 Найти похожие соединения", type="primary", width='stretch'):
                         with st.spinner("Ищу похожие соединения..."):
                             similar_compounds = engine.find_similar_compounds(
                                 target_compound, selected_db, limit
@@ -514,7 +514,7 @@ def render_recommendations_interface():
 
                             st.dataframe(
                                 df,
-                                use_container_width=True,
+                                width='stretch',
                                 hide_index=True,
                                 column_config={
                                     "Название": st.column_config.TextColumn(width="large"),
@@ -550,7 +550,7 @@ def render_recommendations_interface():
                                     xaxis_tickangle=-45
                                 )
 
-                                st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, width='stretch')
 
                     # Кластеризация
                     st.divider()
@@ -558,7 +558,7 @@ def render_recommendations_interface():
 
                     n_clusters = st.slider("Количество кластеров:", 2, 10, 5)
 
-                    if st.button("🎯 Выполнить кластеризацию", use_container_width=True):
+                    if st.button("🎯 Выполнить кластеризацию", width='stretch'):
                         with st.spinner("Выполняю кластеризацию..."):
                             cluster_results = engine.cluster_compounds(compounds_list, selected_db, n_clusters)
 
@@ -580,7 +580,7 @@ def render_recommendations_interface():
 
                                         if cluster_data:
                                             cluster_df = pd.DataFrame(cluster_data)
-                                            st.dataframe(cluster_df, use_container_width=True, hide_index=True)
+                                            st.dataframe(cluster_df, width='stretch', hide_index=True)
 
                             else:
                                 st.error(f"❌ Ошибка кластеризации: {cluster_results['error']}")
