@@ -1,6 +1,3 @@
-# Системные зависимости для корректной работы rdkit и 3D-визуализации
-# Установка: sudo apt-get install $(cat packages.txt)
-
 libxrender1
 libxext6
 libsm6
