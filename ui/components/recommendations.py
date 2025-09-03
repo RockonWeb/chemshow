@@ -13,6 +13,8 @@ from typing import Dict, Any, List, Optional, Tuple
 import logging
 import sqlite3
 import re
+import math
+import os
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -396,8 +398,9 @@ class RecommendationsEngine:
         if mass1 and mass2:
             mass_diff = abs(mass1 - mass2)
             if mass_diff < 10:
-                explanations.append(".1f"            elif mass_diff < 100:
-                explanations.append(".1f"
+                explanations.append(f"Очень близкие массы: {mass1:.1f} vs {mass2:.1f} Da")
+            elif mass_diff < 100:
+                explanations.append(f"Близкие массы: {mass1:.1f} vs {mass2:.1f} Da")
         # Объяснение по структуре
         if RDKIT_AVAILABLE and similarity_score > 0.7:
             explanations.append("Высокая структурная схожесть молекул")
