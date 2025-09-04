@@ -63,44 +63,53 @@ class RecommendationsEngine:
         return cleaned_compound
 
     def find_similar_compounds(self, target_compound: Dict[str, Any],
-                              database_type: str, limit: int = 10) -> List[Dict[str, Any]]:
+                              database_type: str, limit: int = 10,
+                              compounds_list: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
         """
         Поиск похожих соединений на основе различных критериев
         """
         try:
-            # Try absolute import first
-            from config.settings import DATABASE_PATHS
-        except ImportError:
-            # Fallback to relative import
-            from ..config.settings import DATABASE_PATHS
+            if compounds_list is not None:
+                # Используем переданный список соединений
+                compounds_data = compounds_list
+            else:
+                # Загружаем данные из базы данных
+                # Try absolute import first
+                try:
+                    from config.settings import DATABASE_PATHS
+                except ImportError:
+                    # Fallback to relative import
+                    from ..config.settings import DATABASE_PATHS
 
-            if database_type not in DATABASE_PATHS:
-                return []
+                if database_type not in DATABASE_PATHS:
+                    return []
 
-            db_path = DATABASE_PATHS[database_type]
-            if not os.path.exists(db_path):
-                return []
+                db_path = DATABASE_PATHS[database_type]
+                if not os.path.exists(db_path):
+                    return []
 
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
 
-            similar_compounds = []
+                similar_compounds = []
 
-            # Получаем все соединения из базы данных
-            cursor.execute(f"SELECT * FROM {database_type}")
-            all_compounds = cursor.fetchall()
+                # Получаем все соединения из базы данных
+                cursor.execute(f"SELECT * FROM {database_type}")
+                all_compounds = cursor.fetchall()
 
-            # Получаем названия колонок
-            cursor.execute(f"PRAGMA table_info({database_type})")
-            columns = [row[1] for row in cursor.fetchall()]
+                # Получаем названия колонок
+                cursor.execute(f"PRAGMA table_info({database_type})")
+                columns = [row[1] for row in cursor.fetchall()]
 
-            # Преобразуем в словари и очищаем данные
-            compounds_data = []
-            for row in all_compounds:
-                compound_dict = dict(zip(columns, row))
-                # Очищаем SMILES данные
-                cleaned_compound = self._clean_smiles_data(compound_dict)
-                compounds_data.append(cleaned_compound)
+                # Преобразуем в словари и очищаем данные
+                compounds_data = []
+                for row in all_compounds:
+                    compound_dict = dict(zip(columns, row))
+                    # Очищаем SMILES данные
+                    cleaned_compound = self._clean_smiles_data(compound_dict)
+                    compounds_data.append(cleaned_compound)
+
+                conn.close()
 
             # Вычисляем схожесть для каждого соединения
             similarities = []
@@ -116,7 +125,6 @@ class RecommendationsEngine:
             similarities.sort(key=lambda x: x[1], reverse=True)
             similar_compounds = [comp for comp, score in similarities[:limit] if score > 0]
 
-            conn.close()
             return similar_compounds
 
         except Exception as e:
@@ -350,6 +358,41 @@ class RecommendationsEngine:
 
         return similarity
 
+    def _apply_filters(self, compounds: List[Dict[str, Any]], mass_range: tuple,
+                      smiles_only: bool, keyword_filter: str,
+                      formula_elements: List[str]) -> List[Dict[str, Any]]:
+        """Применяет фильтры к списку соединений"""
+        filtered_compounds = []
+
+        for compound in compounds:
+            # Фильтр по массе
+            mass = compound.get('exact_mass')
+            if mass is not None and (mass < mass_range[0] or mass > mass_range[1]):
+                continue
+
+            # Фильтр по SMILES
+            if smiles_only and not self._is_valid_smiles(compound.get('smiles', '')):
+                continue
+
+            # Фильтр по ключевым словам
+            if keyword_filter:
+                keywords = [kw.strip().lower() for kw in keyword_filter.split(',')]
+                name = compound.get('name', '').lower()
+                if not any(keyword in name for keyword in keywords):
+                    continue
+
+            # Фильтр по элементам в формуле
+            if formula_elements:
+                formula = compound.get('formula', '')
+                if formula:
+                    elements_in_formula = set(self._parse_formula(formula).keys())
+                    if not all(elem in elements_in_formula for elem in formula_elements):
+                        continue
+
+            filtered_compounds.append(compound)
+
+        return filtered_compounds
+
     def cluster_compounds(self, compounds: List[Dict[str, Any]],
                          database_type: str, n_clusters: int = 5) -> Dict[str, Any]:
         """Кластеризация соединений"""
@@ -529,20 +572,42 @@ def render_recommendations_interface():
 
             db_path = DATABASE_PATHS[selected_db]
             if os.path.exists(db_path):
-                conn = sqlite3.connect(db_path)
-                cursor = conn.cursor()
+                try:
+                    conn = sqlite3.connect(db_path)
+                    cursor = conn.cursor()
 
-                # Получаем все соединения
-                cursor.execute(f"SELECT * FROM {selected_db} LIMIT 100")  # Ограничиваем для производительности
-                compounds = cursor.fetchall()
+                    # Проверяем структуру таблицы
+                    cursor.execute(f"PRAGMA table_info({selected_db})")
+                    columns = [row[1] for row in cursor.fetchall()]
 
-                cursor.execute(f"PRAGMA table_info({selected_db})")
-                columns = [row[1] for row in cursor.fetchall()]
+                    if not columns:
+                        st.error(f"❌ Ошибка: таблица {selected_db} пустая или не существует")
+                        return
 
-                compounds_list = [dict(zip(columns, row)) for row in compounds]
-                conn.close()
+                    # Получаем все соединения (увеличен лимит для лучших рекомендаций)
+                    cursor.execute(f"SELECT * FROM {selected_db} LIMIT 1000")  # Увеличено для лучших рекомендаций
+                    compounds = cursor.fetchall()
 
-                if compounds_list:
+                    compounds_list = [dict(zip(columns, row)) for row in compounds]
+                    conn.close()
+
+                    if not compounds_list:
+                        st.warning(f"⚠️ В таблице {selected_db} нет данных")
+                        return
+
+                except sqlite3.Error as e:
+                    st.error(f"❌ Ошибка базы данных: {str(e)}")
+                    logger.error(f"Database error for {selected_db}: {e}")
+                    return
+                except Exception as e:
+                    st.error(f"❌ Ошибка загрузки данных: {str(e)}")
+                    logger.error(f"Error loading data from {selected_db}: {e}")
+                    return
+            else:
+                st.error(f"❌ Файл базы данных {db_path} не найден")
+                return
+
+            if compounds_list:
                     st.success(f"✅ Загружено {len(compounds_list)} соединений из базы {database_options[selected_db]}")
 
                     # Очищаем SMILES данные для всех соединений
@@ -564,30 +629,79 @@ def render_recommendations_interface():
                     target_compound = compounds_list[selected_compound_idx]
 
                     # Параметры поиска
+                    st.subheader("⚙️ Параметры поиска")
+
+                    # Основные параметры
                     col1, col2 = st.columns(2)
-
                     with col1:
-                        limit = st.slider("Количество рекомендаций:", 5, 20, 10)
-
+                        limit = st.slider("Количество рекомендаций:", 5, 50, 10)
                     with col2:
                         min_similarity = st.slider("Минимальная схожесть (%):", 0, 100, 30) / 100.0
+
+                    # Продвинутые фильтры
+                    with st.expander("🔍 Продвинутые фильтры"):
+                        col3, col4 = st.columns(2)
+
+                        with col3:
+                            # Фильтр по массе
+                            mass_range = st.slider(
+                                "Диапазон массы (Da):",
+                                0.0, 2000.0, (0.0, 2000.0),
+                                help="Ограничить поиск соединениями в указанном диапазоне масс"
+                            )
+
+                        with col4:
+                            # Фильтр по наличию SMILES
+                            smiles_only = st.checkbox(
+                                "Только с SMILES",
+                                help="Показывать только соединения с валидными SMILES для структурного анализа"
+                            )
+
+                        # Фильтр по ключевым словам
+                        keyword_filter = st.text_input(
+                            "Ключевые слова в названии:",
+                            placeholder="например: glucose, dehydrogenase",
+                            help="Фильтровать по словам в названии (через запятую)"
+                        )
+
+                        # Фильтр по элементам в формуле
+                        formula_elements = st.multiselect(
+                            "Обязательные элементы в формуле:",
+                            options=["C", "H", "O", "N", "P", "S", "Cl", "Br", "I", "F"],
+                            help="Соединения должны содержать выбранные химические элементы"
+                        )
 
                     # Поиск рекомендаций
                     if st.button("🔍 Найти похожие соединения", type="primary", width='stretch'):
                         with st.spinner("Ищу похожие соединения..."):
+                            # Применяем фильтры к списку соединений перед поиском
+                            filtered_compounds_list = engine._apply_filters(
+                                compounds_list, mass_range, smiles_only, keyword_filter, formula_elements
+                            )
+
+                            if len(filtered_compounds_list) < 2:
+                                st.warning("⚠️ После применения фильтров осталось слишком мало соединений для поиска рекомендаций")
+                                return
+
                             similar_compounds = engine.find_similar_compounds(
-                                target_compound, selected_db, limit
+                                target_compound, selected_db, limit, filtered_compounds_list
                             )
 
                             # Фильтруем по минимальной схожести
-                            filtered_compounds = []
+                            final_filtered_compounds = []
                             for comp in similar_compounds:
                                 similarity = engine._calculate_similarity(target_compound, comp, selected_db)
                                 if similarity >= min_similarity:
-                                    filtered_compounds.append((comp, similarity))
+                                    final_filtered_compounds.append((comp, similarity))
 
-                            st.session_state.recommendation_results = filtered_compounds
+                            st.session_state.recommendation_results = final_filtered_compounds
                             st.session_state.target_compound = target_compound
+                            st.session_state.filters_applied = {
+                                'mass_range': mass_range,
+                                'smiles_only': smiles_only,
+                                'keyword_filter': keyword_filter,
+                                'formula_elements': formula_elements
+                            }
 
                     # Отображение результатов
                     if 'recommendation_results' in st.session_state and st.session_state.recommendation_results:
@@ -817,11 +931,8 @@ def render_recommendations_interface():
                             else:
                                 st.error(f"❌ Ошибка кластеризации: {cluster_results['error']}")
 
-                else:
-                    st.warning("В выбранной базе данных нет соединений")
-
             else:
-                st.error(f"База данных {selected_db} не найдена")
+                st.warning("В выбранной базе данных нет соединений")
 
         except Exception as e:
             st.error(f"Ошибка загрузки данных: {str(e)}")

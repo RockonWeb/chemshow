@@ -442,24 +442,8 @@ def render_3d_structure(smiles: str, title: str = "3D Структура мол�
     with st.spinner("Генерация структуры..."):
         pdb_data = smiles_to_3d(smiles.strip())
 
-        # Отладочная информация
-        if pdb_data:
-            st.info(f"✅ Успешно сгенерирована 3D структура для SMILES: {smiles}")
-            st.text(f"PDB данные ({len(pdb_data)} символов):")
-            with st.expander("Показать PDB данные", expanded=False):
-                st.code(pdb_data[:1000] + "..." if len(pdb_data) > 1000 else pdb_data)
-        else:
-            st.warning(f"❌ Не удалось сгенерировать 3D структуру для SMILES: {smiles}")
-
     if pdb_data:
         # Информация для отладки
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            if st.button("🐛 Отладка", help="Показать отладочную информацию"):
-                st.info("**Отладочная информация:**\n"
-                       "- Откройте консоль браузера (F12)\n"
-                       "- Ищите сообщения о PDB данных\n"
-                       "- Проверьте ошибки JavaScript")
 
         # Адаптивные размеры для 3D визуализации
         container_width = min(width, 800)  # Максимум 800px
@@ -887,7 +871,7 @@ def render_advanced_visualization_interface():
                     render_3d_structure(smiles_input)
 
                 elif vis_mode == "2D структура":
-                    render_2d_structure(smiles_input)
+                    render_2d_structure(smiles_input, "2D Структура молекулы")
 
                 elif vis_mode == "Overlay сравнение" and len(smiles_list) >= 2:
                     render_overlay_comparison(smiles_list[0], smiles_list[1], style=vis_style)
@@ -908,37 +892,6 @@ def render_advanced_visualization_interface():
         st.subheader("🛠️ Инструменты редактирования")
 
         render_editing_tools(smiles_input)
-
-
-def render_2d_structure(smiles: str):
-    """Отображение 2D структуры молекулы"""
-    if not RDKIT_AVAILABLE:
-        st.error("RDKit не установлен")
-        return
-
-    try:
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            st.error("Неверный SMILES формат")
-            return
-
-        # Создаем изображение
-        img = Draw.MolToImage(mol, size=(600, 400))
-
-        # Отображаем изображение
-        st.image(img, caption=f"2D структура: {smiles}", use_column_width=True)
-
-        # Дополнительная информация
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Атомы", mol.GetNumAtoms())
-        with col2:
-            st.metric("Связи", mol.GetNumBonds())
-        with col3:
-            st.metric("Кольца", Chem.rdMolDescriptors.CalcNumRings(mol))
-
-    except Exception as e:
-        st.error(f"Ошибка создания 2D структуры: {str(e)}")
 
 
 def render_overlay_comparison(smiles1: str, smiles2: str, style: str = "stick"):
