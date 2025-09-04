@@ -52,6 +52,9 @@ class AnalyticsDashboard:
                 "database_info": {}
             }
 
+            # Add debug logging
+            logger.info(f"Loading stats for databases: {list(DATABASE_PATHS.keys())}")
+
             for db_type, db_path in DATABASE_PATHS.items():
                 if os.path.exists(db_path):
                     try:
@@ -110,10 +113,14 @@ class AnalyticsDashboard:
                         logger.error(f"Ошибка загрузки статистики для {db_type}: {e}")
                         stats["database_info"][db_type] = {"error": str(e)}
 
+            logger.info(f"Successfully loaded stats: {len(stats['database_info'])} databases")
             return stats
 
         except Exception as e:
             logger.error(f"Ошибка загрузки статистики: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {"error": str(e)}
 
     def _get_table_columns(self, cursor, table_name: str) -> List[str]:
@@ -336,6 +343,9 @@ class AnalyticsDashboard:
 
     def create_database_info_table(self, stats: Dict[str, Any]) -> pd.DataFrame:
         """Создание таблицы информации о базах данных"""
+        if not isinstance(stats, dict):
+            return pd.DataFrame()
+
         db_info = stats.get("database_info", {})
 
         if not db_info:
@@ -377,10 +387,19 @@ def render_analytics_dashboard():
     # Загружаем статистику с кешированием
     @st.cache_data(ttl=3600)  # Кеш на 1 час
     def load_stats():
-        return dashboard.load_database_stats()
+        result = dashboard.load_database_stats()
+        if result is None:
+            logger.error("load_database_stats returned None")
+            return {"error": "Не удалось загрузить статистику"}
+        return result
 
     with st.spinner("Загружаю статистику..."):
         stats = load_stats()
+
+    # Проверка загрузки данных
+    if stats is None:
+        st.error("❌ Ошибка: не удалось загрузить статистику")
+        return
 
     # KPI метрики
     dashboard.create_overview_kpi(stats)
