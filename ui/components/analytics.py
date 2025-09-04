@@ -37,10 +37,11 @@ class AnalyticsDashboard:
         """Загрузка статистики из всех баз данных"""
         try:
             # Try absolute import first
-            from config.settings import DATABASE_PATHS
-        except ImportError:
-            # Fallback to relative import
-            from ..config.settings import DATABASE_PATHS
+            try:
+                from config.settings import DATABASE_PATHS
+            except ImportError:
+                # Fallback to relative import
+                from ..config.settings import DATABASE_PATHS
 
             stats = {
                 "total_compounds": 0,
@@ -125,6 +126,11 @@ class AnalyticsDashboard:
 
     def create_overview_kpi(self, stats: Dict[str, Any]) -> None:
         """Создание общих KPI метрик"""
+        # Check if stats is a valid dictionary
+        if not isinstance(stats, dict):
+            st.error("❌ Ошибка: некорректный формат данных статистики")
+            return
+
         if "error" in stats:
             st.error(f"❌ Ошибка загрузки статистики: {stats['error']}")
             return
@@ -172,6 +178,8 @@ class AnalyticsDashboard:
 
     def create_compounds_distribution_chart(self, stats: Dict[str, Any]) -> Optional[go.Figure]:
         """Диаграмма распределения соединений по типам"""
+        if not isinstance(stats, dict):
+            return None
         compounds_by_type = stats.get("compounds_by_type", {})
 
         if not compounds_by_type:
@@ -223,6 +231,8 @@ class AnalyticsDashboard:
 
     def create_mass_distribution_chart(self, stats: Dict[str, Any]) -> Optional[go.Figure]:
         """Диаграмма распределения по молекулярным массам"""
+        if not isinstance(stats, dict):
+            return None
         mass_dist = stats.get("mass_distribution", {})
 
         if not mass_dist.get("ranges") or not mass_dist.get("counts"):
@@ -258,6 +268,8 @@ class AnalyticsDashboard:
 
     def create_organism_distribution_chart(self, stats: Dict[str, Any]) -> Optional[go.Figure]:
         """Диаграмма распределения по организмам"""
+        if not isinstance(stats, dict):
+            return None
         org_dist = stats.get("organism_distribution", {})
 
         if not org_dist:
@@ -290,6 +302,8 @@ class AnalyticsDashboard:
 
     def create_class_distribution_chart(self, stats: Dict[str, Any]) -> Optional[go.Figure]:
         """Диаграмма распределения метаболитов по классам"""
+        if not isinstance(stats, dict):
+            return None
         class_dist = stats.get("class_distribution", {})
 
         if not class_dist:
