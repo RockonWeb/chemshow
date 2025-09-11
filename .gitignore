@@ -46,6 +46,10 @@ Thumbs.db
 # *.db
 # *.sqlite
 
+# Database temporary files
+*.db-shm
+*.db-wal
+
 # Environment variables
 .env
 .env.local
@@ -54,6 +58,9 @@ Thumbs.db
 # Cache
 .cache/
 .pytest_cache/
+ui/cache/*.cache
+ui/cache/structures/*.pdb
+*.cache
 
 # Coverage
 htmlcov/
@@ -61,3 +68,16 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+.clinerules/byterover-rules.md
+.kilocode/rules/byterover-rules.md
+.roo/rules/byterover-rules.md
+.windsurf/rules/byterover-rules.md
+.cursor/rules/byterover-rules.mdc
+.kiro/steering/byterover-rules.md
+.qoder/rules/byterover-rules.md
+.augment/rules/byterover-rules.md
+
+# Application specific
+ui/logs/
+performance_report.json
+ui.zip

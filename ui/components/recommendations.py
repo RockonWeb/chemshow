@@ -393,77 +393,207 @@ class RecommendationsEngine:
 
         return filtered_compounds
 
+    def _create_clustering_features(self, compounds: List[Dict[str, Any]],
+                                   database_type: str) -> Tuple[List[List[float]], List[str]]:
+        """Создание расширенных признаков для кластеризации"""
+        features = []
+        feature_names = []
+
+        # Определяем базовые признаки
+        base_features = ['mass', 'name_length', 'formula_length']
+        feature_names.extend(base_features)
+
+        for compound in compounds:
+            feature_vector = []
+
+            # Базовые признаки
+            mass = compound.get('exact_mass', 0)
+            feature_vector.append(float(mass) if mass else 0.0)
+
+            name_len = len(compound.get('name', ''))
+            feature_vector.append(float(name_len))
+
+            formula_len = len(compound.get('formula', ''))
+            feature_vector.append(float(formula_len))
+
+            # Специфические признаки по типам
+            if database_type in ['metabolites', 'carbohydrates', 'lipids']:
+                # Химические признаки
+                elements = self._parse_formula(compound.get('formula', ''))
+                feature_vector.append(float(len(elements)))  # Количество элементов
+                feature_vector.append(float(sum(elements.values())))  # Общее количество атомов
+
+                # Структурные признаки
+                class_len = len(compound.get('class_name', ''))
+                feature_vector.append(float(class_len))
+
+                feature_names.extend(['elements_count', 'atoms_total', 'class_length'])
+
+                # Молекулярные дескрипторы (если есть SMILES)
+                if RDKIT_AVAILABLE and compound.get('smiles'):
+                    try:
+                        mol = Chem.MolFromSmiles(compound.get('smiles'))
+                        if mol:
+                            feature_vector.append(float(Chem.rdMolDescriptors.CalcNumHBD(mol)))  # H-bond donors
+                            feature_vector.append(float(Chem.rdMolDescriptors.CalcNumHBA(mol)))  # H-bond acceptors
+                            feature_vector.append(float(Descriptors.MolLogP(mol)))  # LogP
+                            feature_vector.append(float(Descriptors.MolWt(mol)))   # Molecular weight
+                            feature_names.extend(['hbd', 'hba', 'logp', 'molwt'])
+                        else:
+                            # Добавляем нули если SMILES невалиден
+                            feature_vector.extend([0.0, 0.0, 0.0, 0.0])
+                            feature_names.extend(['hbd', 'hba', 'logp', 'molwt'])
+                    except:
+                        feature_vector.extend([0.0, 0.0, 0.0, 0.0])
+                        feature_names.extend(['hbd', 'hba', 'logp', 'molwt'])
+                else:
+                    feature_vector.extend([0.0, 0.0, 0.0, 0.0])
+                    feature_names.extend(['hbd', 'hba', 'logp', 'molwt'])
+
+            elif database_type == 'enzymes':
+                # EC номер признаки
+                ec_number = compound.get('ec_number', '0.0.0.0')
+                ec_parts = ec_number.split('.')
+                for i in range(4):
+                    if i < len(ec_parts):
+                        try:
+                            feature_vector.append(float(ec_parts[i]))
+                        except:
+                            feature_vector.append(0.0)
+                    else:
+                        feature_vector.append(0.0)
+
+                feature_names.extend(['ec1', 'ec2', 'ec3', 'ec4'])
+
+                # Функциональные признаки
+                family_len = len(compound.get('family', ''))
+                feature_vector.append(float(family_len))
+                feature_names.append('family_length')
+
+            elif database_type == 'proteins':
+                # Белковые признаки
+                seq_len = compound.get('sequence_length', 0)
+                feature_vector.append(float(seq_len) if seq_len else 0.0)
+
+                func_len = len(compound.get('function', ''))
+                feature_vector.append(float(func_len))
+
+                family_len = len(compound.get('family', ''))
+                feature_vector.append(float(family_len))
+
+                feature_names.extend(['seq_length', 'func_length', 'family_length'])
+
+            features.append(feature_vector)
+
+        # Убираем дубликаты из названий признаков
+        feature_names = list(dict.fromkeys(feature_names))
+
+        return features, feature_names
+
+    def save_recommendation_session(self, session_data: Dict[str, Any], session_name: str) -> bool:
+        """Сохранение сессии рекомендаций"""
+        try:
+            import json
+            import os
+            from datetime import datetime
+
+            # Создаем директорию для сессий если её нет
+            sessions_dir = os.path.join(os.path.dirname(__file__), '..', 'sessions')
+            os.makedirs(sessions_dir, exist_ok=True)
+
+            # Добавляем метаданные сессии
+            session_data['metadata'] = {
+                'name': session_name,
+                'timestamp': datetime.now().isoformat(),
+                'version': '1.0'
+            }
+
+            # Сохраняем сессию
+            session_file = os.path.join(sessions_dir, f"{session_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, ensure_ascii=False, indent=2, default=str)
+
+            logger.info(f"Сессия рекомендаций сохранена: {session_file}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Ошибка сохранения сессии: {e}")
+            return False
+
+    def load_recommendation_sessions(self) -> List[Dict[str, Any]]:
+        """Загрузка списка сохраненных сессий"""
+        try:
+            import os
+            import json
+            from datetime import datetime
+
+            sessions_dir = os.path.join(os.path.dirname(__file__), '..', 'sessions')
+            if not os.path.exists(sessions_dir):
+                return []
+
+            sessions = []
+            for filename in os.listdir(sessions_dir):
+                if filename.endswith('.json'):
+                    try:
+                        filepath = os.path.join(sessions_dir, filename)
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            session_data = json.load(f)
+
+                        # Добавляем информацию о файле
+                        session_data['file_info'] = {
+                            'filename': filename,
+                            'filepath': filepath,
+                            'file_size': os.path.getsize(filepath)
+                        }
+
+                        sessions.append(session_data)
+                    except Exception as e:
+                        logger.warning(f"Ошибка загрузки сессии {filename}: {e}")
+
+            # Сортируем по времени создания (новые сверху)
+            sessions.sort(key=lambda x: x.get('metadata', {}).get('timestamp', ''), reverse=True)
+            return sessions
+
+        except Exception as e:
+            logger.error(f"Ошибка загрузки сессий: {e}")
+            return []
+
+    def delete_recommendation_session(self, session_filename: str) -> bool:
+        """Удаление сессии рекомендаций"""
+        try:
+            import os
+            sessions_dir = os.path.join(os.path.dirname(__file__), '..', 'sessions')
+            filepath = os.path.join(sessions_dir, session_filename)
+
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                logger.info(f"Сессия удалена: {session_filename}")
+                return True
+            else:
+                logger.warning(f"Файл сессии не найден: {session_filename}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Ошибка удаления сессии: {e}")
+            return False
+
     def cluster_compounds(self, compounds: List[Dict[str, Any]],
-                         database_type: str, n_clusters: int = 5) -> Dict[str, Any]:
-        """Кластеризация соединений"""
-        if not compounds or len(compounds) < n_clusters:
+                         database_type: str, n_clusters: int = 5,
+                         algorithm: str = "kmeans") -> Dict[str, Any]:
+        """Улучшенная кластеризация соединений с множеством алгоритмов"""
+        if not compounds or len(compounds) < 2:
             return {"error": "Недостаточно данных для кластеризации"}
 
+        if len(compounds) < n_clusters and algorithm == "kmeans":
+            n_clusters = max(2, len(compounds) // 2)  # Автоматическая корректировка
+
         try:
-            # Создаем признаки для кластеризации с фиксированной длиной
-            features = []
-
-            for compound in compounds:
-                feature_vector = []
-
-                # Общие признаки для всех типов (всегда 3 признака)
-                mass = compound.get('exact_mass', 0)
-                feature_vector.append(float(mass) if mass else 0.0)
-
-                name_len = len(compound.get('name', ''))
-                feature_vector.append(float(name_len))
-
-                formula_len = len(compound.get('formula', ''))
-                feature_vector.append(float(formula_len))
-
-                # Дополнительные признаки в зависимости от типа
-                if database_type in ['metabolites', 'carbohydrates', 'lipids']:
-                    # Количество элементов в формуле
-                    elements = self._parse_formula(compound.get('formula', ''))
-                    feature_vector.append(float(len(elements)))
-                    # Длина названия класса
-                    class_len = len(compound.get('class_name', ''))
-                    feature_vector.append(float(class_len))
-
-                elif database_type == 'enzymes':
-                    # EC номер как числовые признаки
-                    ec_number = compound.get('ec_number', '0.0.0.0')
-                    ec_parts = ec_number.split('.')
-                    for i in range(4):  # Фиксированная длина 4
-                        if i < len(ec_parts):
-                            try:
-                                feature_vector.append(float(ec_parts[i]))
-                            except:
-                                feature_vector.append(0.0)
-                        else:
-                            feature_vector.append(0.0)
-
-                elif database_type == 'proteins':
-                    # Длина последовательности
-                    seq_len = compound.get('sequence_length', 0)
-                    feature_vector.append(float(seq_len) if seq_len else 0.0)
-                    # Длина названия функции
-                    func_len = len(compound.get('function', ''))
-                    feature_vector.append(float(func_len))
-                    # Длина семейства
-                    family_len = len(compound.get('family', ''))
-                    feature_vector.append(float(family_len))
-
-                features.append(feature_vector)
+            # Создаем расширенные признаки для кластеризации
+            features, feature_names = self._create_clustering_features(compounds, database_type)
 
             if not features:
-                return {"error": "Недостаточно данных для кластеризации"}
-
-            # Проверяем, что все векторы имеют одинаковую длину
-            feature_lengths = [len(f) for f in features]
-            if len(set(feature_lengths)) > 1:
-                logger.warning(f"Векторы признаков имеют разную длину: {set(feature_lengths)}")
-                # Усекаем до минимальной длины
-                min_length = min(feature_lengths)
-                features = [f[:min_length] for f in features]
-
-            if len(features[0]) == 0:
-                return {"error": "Недостаточно признаков для кластеризации"}
+                return {"error": "Недостаточно данных для создания признаков"}
 
             # Нормализация признаков
             import numpy as np
@@ -472,9 +602,53 @@ class RecommendationsEngine:
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features_array)
 
-            # Кластеризация
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-            clusters = kmeans.fit_predict(features_scaled)
+            # Выполняем кластеризацию выбранным алгоритмом
+            if algorithm == "kmeans":
+                from sklearn.cluster import KMeans
+                if len(compounds) < n_clusters:
+                    n_clusters = max(2, len(compounds) // 2)
+                cluster_model = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+                clusters = cluster_model.fit_predict(features_scaled)
+                centroids = cluster_model.cluster_centers_
+
+            elif algorithm == "dbscan":
+                from sklearn.cluster import DBSCAN
+                # Автоматический подбор eps на основе данных
+                from sklearn.neighbors import NearestNeighbors
+                neighbors = NearestNeighbors(n_neighbors=5)
+                neighbors_fit = neighbors.fit(features_scaled)
+                distances, indices = neighbors_fit.kneighbors(features_scaled)
+                distances = np.sort(distances, axis=0)
+                distances = distances[:, 1]
+                eps = np.percentile(distances, 90)  # 90-й процентиль
+                cluster_model = DBSCAN(eps=eps, min_samples=max(2, len(compounds) // 20))
+                clusters = cluster_model.fit_predict(features_scaled)
+                centroids = None
+                # Пересчитываем количество кластеров (DBSCAN может дать -1 для шумовых точек)
+                n_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)
+
+            elif algorithm == "agglomerative":
+                from sklearn.cluster import AgglomerativeClustering
+                cluster_model = AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')
+                clusters = cluster_model.fit_predict(features_scaled)
+                centroids = None
+
+            else:
+                return {"error": f"Неподдерживаемый алгоритм кластеризации: {algorithm}"}
+
+            # Вычисляем метрики качества кластеризации
+            from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+
+            quality_metrics = {}
+            try:
+                if n_clusters > 1 and len(set(clusters)) > 1:
+                    quality_metrics['silhouette'] = silhouette_score(features_scaled, clusters)
+                    quality_metrics['calinski_harabasz'] = calinski_harabasz_score(features_scaled, clusters)
+                    quality_metrics['davies_bouldin'] = davies_bouldin_score(features_scaled, clusters)
+                else:
+                    quality_metrics = {"warning": "Недостаточно кластеров для оценки качества"}
+            except:
+                quality_metrics = {"warning": "Не удалось вычислить метрики качества"}
 
             # Группировка результатов
             cluster_results = {}
@@ -486,7 +660,11 @@ class RecommendationsEngine:
             return {
                 "clusters": cluster_results,
                 "n_clusters": n_clusters,
-                "total_compounds": len(compounds)
+                "total_compounds": len(compounds),
+                "algorithm": algorithm,
+                "quality_metrics": quality_metrics,
+                "feature_names": feature_names,
+                "centroids": centroids.tolist() if centroids is not None else None
             }
 
         except Exception as e:
@@ -545,6 +723,40 @@ def render_recommendations_interface():
     st.header("🎯 Система рекомендаций")
 
     engine = RecommendationsEngine()
+
+    # Загрузка сохраненных сессий
+    with st.expander("📂 Загрузка сохраненных сессий"):
+        saved_sessions = engine.load_recommendation_sessions()
+
+        if saved_sessions:
+            session_options = [f"{s.get('metadata', {}).get('name', 'Без названия')} - {s.get('metadata', {}).get('timestamp', '')[:19]}" for s in saved_sessions]
+            selected_session_idx = st.selectbox(
+                "Выберите сессию для загрузки:",
+                options=range(len(saved_sessions)),
+                format_func=lambda x: session_options[x] if x < len(session_options) else "—"
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📂 Загрузить сессию", use_container_width=True):
+                    session_data = saved_sessions[selected_session_idx]
+                    st.session_state.recommendation_results = session_data.get('recommendations', [])
+                    st.session_state.target_compound = session_data.get('target_compound', {})
+                    st.session_state.filters_applied = session_data.get('filters', {})
+                    st.success("✅ Сессия загружена! Просмотрите результаты ниже.")
+
+            with col2:
+                if st.button("🗑️ Удалить сессию", use_container_width=True):
+                    filename = saved_sessions[selected_session_idx].get('file_info', {}).get('filename')
+                    if filename and engine.delete_recommendation_session(filename):
+                        st.success("✅ Сессия удалена!")
+                        st.rerun()  # Обновляем интерфейс
+                    else:
+                        st.error("❌ Ошибка удаления сессии")
+        else:
+            st.info("💡 У вас пока нет сохраненных сессий. Выполните поиск рекомендаций и сохраните результаты.")
+
+    st.divider()
 
     # Выбор типа базы данных для поиска
     database_options = {
@@ -703,6 +915,33 @@ def render_recommendations_interface():
                                 'formula_elements': formula_elements
                             }
 
+                            # Сохранение сессии
+                            st.divider()
+                            st.subheader("💾 Сохранение сессии")
+
+                            session_name = st.text_input(
+                                "Название сессии:",
+                                placeholder="Моя сессия рекомендаций",
+                                help="Введите название для сохранения текущей сессии"
+                            )
+
+                            if st.button("💾 Сохранить сессию", type="secondary", use_container_width=True):
+                                if session_name.strip():
+                                    session_data = {
+                                        'recommendations': st.session_state.recommendation_results,
+                                        'target_compound': st.session_state.target_compound,
+                                        'filters': st.session_state.filters_applied,
+                                        'database_type': selected_db,
+                                        'timestamp': pd.Timestamp.now().isoformat()
+                                    }
+
+                                    if engine.save_recommendation_session(session_data, session_name.strip()):
+                                        st.success(f"✅ Сессия '{session_name}' успешно сохранена!")
+                                    else:
+                                        st.error("❌ Ошибка сохранения сессии")
+                                else:
+                                    st.warning("⚠️ Введите название сессии")
+
                     # Отображение результатов
                     if 'recommendation_results' in st.session_state and st.session_state.recommendation_results:
                         results = st.session_state.recommendation_results
@@ -826,20 +1065,100 @@ def render_recommendations_interface():
 
                     # Кластеризация
                     st.divider()
-                    st.subheader("📈 Кластеризация соединений")
+                    st.subheader("📈 Улучшенная кластеризация соединений")
 
-                    n_clusters = st.slider("Количество кластеров:", 2, 10, 5)
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        n_clusters = st.slider("Количество кластеров:", 2, 10, 5)
+                    with col2:
+                        algorithm_options = {
+                            "kmeans": "K-means (сферические кластеры)",
+                            "dbscan": "DBSCAN (произвольная форма)",
+                            "agglomerative": "Иерархическая (древовидная)"
+                        }
+                        selected_algorithm = st.selectbox(
+                            "Алгоритм кластеризации:",
+                            options=list(algorithm_options.keys()),
+                            format_func=lambda x: algorithm_options[x]
+                        )
 
                     if st.button("🎯 Выполнить кластеризацию", width='stretch'):
                         with st.spinner("Выполняю кластеризацию..."):
-                            cluster_results = engine.cluster_compounds(compounds_list, selected_db, n_clusters)
+                            cluster_results = engine.cluster_compounds(
+                                compounds_list, selected_db, n_clusters, selected_algorithm
+                            )
 
                             if "error" not in cluster_results:
                                 st.success(f"✅ Найдено {cluster_results['n_clusters']} кластеров из {cluster_results['total_compounds']} соединений")
+                                st.info(f"🎯 Алгоритм: {algorithm_options[selected_algorithm]}")
+
+                                # Отображение метрик качества
+                                if "quality_metrics" in cluster_results and "warning" not in cluster_results["quality_metrics"]:
+                                    metrics = cluster_results["quality_metrics"]
+                                    st.subheader("📊 Метрики качества кластеризации")
+
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        if 'silhouette' in metrics:
+                                            st.metric(
+                                                "Коэффициент силуэта",
+                                                f"{metrics['silhouette']:.3f}",
+                                                help="Чем ближе к 1, тем лучше разделение кластеров"
+                                            )
+                                    with col2:
+                                        if 'calinski_harabasz' in metrics:
+                                            st.metric(
+                                                "Индекс Calinski-Harabasz",
+                                                f"{metrics['calinski_harabasz']:.1f}",
+                                                help="Чем выше значение, тем лучше кластеризация"
+                                            )
+                                    with col3:
+                                        if 'davies_bouldin' in metrics:
+                                            st.metric(
+                                                "Индекс Davies-Bouldin",
+                                                f"{metrics['davies_bouldin']:.3f}",
+                                                help="Чем ниже значение, тем лучше кластеризация"
+                                            )
+                                elif "quality_metrics" in cluster_results and "warning" in cluster_results["quality_metrics"]:
+                                    st.warning(cluster_results["quality_metrics"]["warning"])
 
                                 # Отображение кластеров
                                 clusters = cluster_results['clusters']
                                 
+                                # Визуализация распределения кластеров
+                                st.subheader("📊 Распределение кластеров")
+
+                                cluster_sizes = [len(cluster_compounds) for cluster_compounds in clusters.values()]
+                                cluster_labels = [f"Кластер {cluster_id + 1}" for cluster_id in clusters.keys()]
+
+                                # Круговая диаграмма
+                                fig_pie = go.Figure(data=[
+                                    go.Pie(
+                                        labels=cluster_labels,
+                                        values=cluster_sizes,
+                                        textinfo='label+percent',
+                                        insidetextorientation='radial'
+                                    )
+                                ])
+
+                                fig_pie.update_layout(
+                                    title="Распределение соединений по кластерам",
+                                    height=400
+                                )
+
+                                col1, col2 = st.columns([2, 1])
+                                with col1:
+                                    st.plotly_chart(fig_pie, width='stretch')
+
+                                with col2:
+                                    # Статистика кластеров
+                                    st.subheader("📈 Статистика")
+                                    st.metric("Всего кластеров", len(clusters))
+                                    st.metric("Максимальный кластер", max(cluster_sizes))
+                                    st.metric("Минимальный кластер", min(cluster_sizes))
+                                    avg_size = sum(cluster_sizes) / len(cluster_sizes)
+                                    st.metric("Средний размер", ".1f")
+
                                 # Подготовка данных для экспорта
                                 export_data = []
                                 for cluster_id, cluster_compounds in clusters.items():

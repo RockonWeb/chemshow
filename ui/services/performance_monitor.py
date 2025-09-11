@@ -1,256 +1,239 @@
 """
-Мониторинг производительности запросов
+Система мониторинга и оптимизации производительности
 """
-import time
-import logging
-from typing import Dict, Any, List, Optional
-from collections import defaultdict
-from datetime import datetime, timedelta
+import asyncio
 import json
+import logging
+import time
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from pathlib import Path
+from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
+
+import psutil
+import streamlit as st
 
 logger = logging.getLogger(__name__)
 
-# Директория для логов производительности
-PERF_LOG_DIR = Path("ui/logs")
-PERF_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+@dataclass
+class PerformanceMetrics:
+    """Метрики производительности"""
+    timestamp: float
+    cpu_percent: float
+    memory_percent: float
+    disk_io_read_bytes: int
+    disk_io_write_bytes: int
+    query_count: int = 0
+    cache_hits: int = 0
+    cache_misses: int = 0
+    response_time_ms: float = 0.0
+    active_connections: int = 0
+
+
+@dataclass
+class QueryStats:
+    """Статистика запросов"""
+    query_type: str
+    db_type: str
+    duration_ms: float
+    cache_hit: bool
+    timestamp: float
+    records_count: int = 0
 
 
 class PerformanceMonitor:
-    """Мониторинг производительности приложения"""
-
-    def __init__(self):
-        self.query_stats = defaultdict(list)
-        self.request_stats = []
+    """Монитор производительности приложения"""
+    
+    def __init__(self, max_history: int = 1000):
+        self.max_history = max_history
+        self.metrics_history = deque(maxlen=max_history)
+        self.query_history = deque(maxlen=max_history)
+        self.slow_queries = deque(maxlen=100)
+        self.query_stats = defaultdict(lambda: {"count": 0, "total_time": 0})
+        self.lock = Lock()
         self.start_time = time.time()
-
-    def log_query(self, db_type: str, query_type: str, duration: float,
-                  records_count: int = 0, cache_hit: bool = False) -> None:
-        """
-        Логирует выполнение запроса
-
-        Args:
-            db_type: Тип базы данных
-            query_type: Тип запроса (SELECT, COUNT, etc.)
-            duration: Время выполнения в секундах
-            records_count: Количество возвращенных записей
-            cache_hit: Было ли попадание в кэш
-        """
-        stat = {
-            'timestamp': datetime.now().isoformat(),
-            'db_type': db_type,
-            'query_type': query_type,
-            'duration': duration,
-            'records_count': records_count,
-            'cache_hit': cache_hit
+        
+        # Пороги для предупреждений
+        self.thresholds = {
+            "cpu_percent": 80,
+            "memory_percent": 85,
+            "query_time_ms": 1000,
+            "cache_hit_rate": 0.7
         }
-
-        self.query_stats[db_type].append(stat)
-
-        # Логируем медленные запросы
-        if duration > 1.0:  # Более 1 секунды
-            logger.warning(f"Slow query detected: {db_type} {query_type} took {duration:.2f}s")
-        elif duration > 0.1:  # Более 100мс
-            logger.info(f"Query performance: {db_type} {query_type} took {duration:.2f}s")
-
-    def log_request(self, endpoint: str, method: str, duration: float,
-                   status_code: int = 200) -> None:
-        """
-        Логирует HTTP запрос
-
-        Args:
-            endpoint: Конечная точка
-            method: HTTP метод
-            duration: Время выполнения
-            status_code: Код ответа
-        """
-        stat = {
-            'timestamp': datetime.now().isoformat(),
-            'endpoint': endpoint,
-            'method': method,
-            'duration': duration,
-            'status_code': status_code
-        }
-
-        self.request_stats.append(stat)
-
-    def get_query_stats(self, db_type: Optional[str] = None,
-                       hours: int = 24) -> Dict[str, Any]:
-        """
-        Получает статистику запросов
-
-        Args:
-            db_type: Тип базы данных (если None, то все)
-            hours: За сколько часов собрать статистику
-
-        Returns:
-            Статистика запросов
-        """
-        cutoff_time = datetime.now() - timedelta(hours=hours)
-
-        if db_type:
-            stats = self.query_stats.get(db_type, [])
-        else:
-            stats = []
-            for db_stats in self.query_stats.values():
-                stats.extend(db_stats)
-
-        # Фильтруем по времени
-        recent_stats = [
-            stat for stat in stats
-            if datetime.fromisoformat(stat['timestamp']) > cutoff_time
-        ]
-
-        if not recent_stats:
-            return {
-                'total_queries': 0,
-                'avg_duration': 0,
-                'cache_hit_rate': 0,
-                'slow_queries': 0
-            }
-
-        total_queries = len(recent_stats)
-        total_duration = sum(stat['duration'] for stat in recent_stats)
-        cache_hits = sum(1 for stat in recent_stats if stat['cache_hit'])
-        slow_queries = sum(1 for stat in recent_stats if stat['duration'] > 1.0)
-
-        return {
-            'total_queries': total_queries,
-            'avg_duration': total_duration / total_queries if total_queries > 0 else 0,
-            'cache_hit_rate': cache_hits / total_queries if total_queries > 0 else 0,
-            'slow_queries': slow_queries,
-            'total_records': sum(stat['records_count'] for stat in recent_stats)
-        }
-
-    def get_performance_report(self) -> str:
-        """
-        Генерирует отчет о производительности
-
-        Returns:
-            Текстовый отчет
-        """
-        uptime = time.time() - self.start_time
-
-        report = f"""
-📊 Отчет о производительности
-{'='*40}
-⏱️  Время работы: {uptime:.1f} секунд ({uptime/3600:.1f} часов)
-
-🔍 Статистика запросов:
-"""
-
-        for db_type in self.query_stats.keys():
-            stats = self.get_query_stats(db_type, hours=24)
-            if stats['total_queries'] > 0:
-                report += f"""
-📁 {db_type.upper()}:
-  • Всего запросов: {stats['total_queries']}
-  • Среднее время: {stats['avg_duration']*1000:.1f} мс
-  • Попаданий в кэш: {stats['cache_hit_rate']*100:.1f}%
-  • Медленных запросов: {stats['slow_queries']}
-  • Всего записей: {stats['total_records']}
-"""
-
-        report += "\n💾 Статистика кэша:\n"
+    
+    def collect_system_metrics(self) -> PerformanceMetrics:
+        """Собирает системные метрики"""
         try:
-            from .cache_manager import cache_manager
-            cache_stats = cache_manager.get_stats()
-            report += f"""  • Всего файлов: {cache_stats['total_files']}
-  • Валидных: {cache_stats['valid_files']}
-  • Истекших: {cache_stats['expired_files']}
-  • Размер: {cache_stats['total_size_mb']:.2f} MB
-"""
-        except ImportError:
-            report += "  • Кэш недоступен\n"
-
-        return report
-
-    def save_report(self, filename: Optional[str] = None) -> str:
-        """
-        Сохраняет отчет в файл
-
-        Args:
-            filename: Имя файла (если None, генерируется автоматически)
-
-        Returns:
-            Путь к сохраненному файлу
-        """
-        if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"performance_report_{timestamp}.txt"
-
-        report_path = PERF_LOG_DIR / filename
-
-        try:
-            with open(report_path, 'w', encoding='utf-8') as f:
-                f.write(self.get_performance_report())
-
-            logger.info(f"Performance report saved: {report_path}")
-            return str(report_path)
-
-        except Exception as e:
-            logger.error(f"Error saving performance report: {e}")
-            return ""
-
-    def reset_stats(self) -> None:
-        """Сбрасывает статистику производительности"""
-        self.query_stats.clear()
-        self.request_stats.clear()
-        self.start_time = time.time()
-        logger.info("Performance statistics reset")
-
-
-# Глобальный экземпляр монитора производительности
-performance_monitor = PerformanceMonitor()
-
-
-def profile_query(func):
-    """
-    Декоратор для профилирования запросов
-
-    Args:
-        func: Функция для профилирования
-
-    Returns:
-        Декорированная функция
-    """
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-
-        try:
-            result = func(*args, **kwargs)
-            duration = time.time() - start_time
-
-            # Определяем тип базы данных из аргументов
-            if args and len(args) > 1:
-                db_type = args[1] if isinstance(args[1], str) else "unknown"
-            else:
-                db_type = "unknown"
-
-            # Определяем тип запроса
-            query = args[2] if len(args) > 2 else ""
-            query_type = query.split()[0].upper() if query else "UNKNOWN"
-
-            # Определяем количество записей
-            records_count = 0
-            if isinstance(result, list):
-                records_count = len(result)
-            elif isinstance(result, int):
-                records_count = result
-
-            performance_monitor.log_query(
-                db_type=db_type,
-                query_type=query_type,
-                duration=duration,
-                records_count=records_count,
-                cache_hit=False  # Будет установлено в cache_manager
+            cpu = psutil.cpu_percent(interval=0.1)
+            memory = psutil.virtual_memory().percent
+            disk = psutil.disk_io_counters()
+            
+            return PerformanceMetrics(
+                timestamp=time.time(),
+                cpu_percent=cpu,
+                memory_percent=memory,
+                disk_io_read_bytes=disk.read_bytes if disk else 0,
+                disk_io_write_bytes=disk.write_bytes if disk else 0
             )
-
-            return result
-
         except Exception as e:
-            duration = time.time() - start_time
-            logger.error(f"Query profiling error: {e} (duration: {duration:.3f}s)")
-            raise
+            logger.error(f"Error collecting system metrics: {e}")
+            return PerformanceMetrics(
+                timestamp=time.time(),
+                cpu_percent=0,
+                memory_percent=0,
+                disk_io_read_bytes=0,
+                disk_io_write_bytes=0
+            )
+    
+    def log_query(
+        self,
+        db_type: str,
+        query_type: str,
+        duration: float,
+        records_count: int = 0,
+        cache_hit: bool = False
+    ):
+        """Логирует информацию о запросе"""
+        with self.lock:
+            duration_ms = duration * 1000
+            
+            # Создаем статистику запроса
+            stats = QueryStats(
+                query_type=query_type,
+                db_type=db_type,
+                duration_ms=duration_ms,
+                cache_hit=cache_hit,
+                timestamp=time.time(),
+                records_count=records_count
+            )
+            
+            # Добавляем в историю
+            self.query_history.append(stats)
+            
+            # Обновляем агрегированную статистику
+            key = f"{db_type}:{query_type}"
+            self.query_stats[key]["count"] += 1
+            self.query_stats[key]["total_time"] += duration_ms
+            
+            # Проверяем на медленный запрос
+            if duration_ms > self.thresholds["query_time_ms"]:
+                self.slow_queries.append(stats)
+                logger.warning(f"Slow query detected: {db_type}:{query_type} took {duration_ms:.2f}ms")
+    
+    def get_current_metrics(self) -> Dict[str, Any]:
+        """Получает текущие метрики"""
+        with self.lock:
+            # Системные метрики
+            sys_metrics = self.collect_system_metrics()
+            
+            # Статистика кэша
+            cache_total = sum(1 for q in self.query_history if q.timestamp > time.time() - 60)
+            cache_hits = sum(1 for q in self.query_history if q.cache_hit and q.timestamp > time.time() - 60)
+            cache_hit_rate = (cache_hits / cache_total * 100) if cache_total > 0 else 0
+            
+            # Средняя скорость ответа
+            recent_queries = [q for q in self.query_history if q.timestamp > time.time() - 60]
+            avg_response_time = (
+                sum(q.duration_ms for q in recent_queries) / len(recent_queries)
+                if recent_queries else 0
+            )
+            
+            return {
+                "system": {
+                    "cpu_percent": sys_metrics.cpu_percent,
+                    "memory_percent": sys_metrics.memory_percent,
+                    "disk_read_mb": sys_metrics.disk_io_read_bytes / (1024 * 1024),
+                    "disk_write_mb": sys_metrics.disk_io_write_bytes / (1024 * 1024)
+                },
+                "queries": {
+                    "total_last_minute": cache_total,
+                    "cache_hit_rate": f"{cache_hit_rate:.1f}%",
+                    "avg_response_time_ms": f"{avg_response_time:.2f}",
+                    "slow_queries_count": len(self.slow_queries)
+                },
+                "uptime_hours": (time.time() - self.start_time) / 3600
+            }
+    
+    def get_query_statistics(self) -> Dict[str, Any]:
+        """Получает статистику запросов"""
+        with self.lock:
+            stats = {}
+            
+            for key, data in self.query_stats.items():
+                avg_time = data["total_time"] / data["count"] if data["count"] > 0 else 0
+                stats[key] = {
+                    "count": data["count"],
+                    "avg_time_ms": f"{avg_time:.2f}",
+                    "total_time_ms": f"{data['total_time']:.2f}"
+                }
+            
+            return stats
+    
+    def get_optimization_suggestions(self) -> List[str]:
+        """Генерирует предложения по оптимизации"""
+        suggestions = []
+        metrics = self.get_current_metrics()
+        
+        # Проверка CPU
+        if metrics["system"]["cpu_percent"] > self.thresholds["cpu_percent"]:
+            suggestions.append(f"⚠️ Высокая загрузка CPU ({metrics['system']['cpu_percent']}%). Рекомендуется оптимизировать тяжелые операции.")
+        
+        # Проверка памяти
+        if metrics["system"]["memory_percent"] > self.thresholds["memory_percent"]:
+            suggestions.append(f"⚠️ Высокое использование памяти ({metrics['system']['memory_percent']}%). Рекомендуется проверить утечки памяти.")
+        
+        # Проверка кэша
+        cache_hit_rate = float(metrics["queries"]["cache_hit_rate"].rstrip('%'))
+        if cache_hit_rate < self.thresholds["cache_hit_rate"] * 100:
+            suggestions.append(f"💡 Низкий показатель попаданий в кэш ({cache_hit_rate}%). Увеличьте размер кэша или TTL.")
+        
+        # Проверка медленных запросов
+        if metrics["queries"]["slow_queries_count"] > 10:
+            suggestions.append(f"🐌 Обнаружено {metrics['queries']['slow_queries_count']} медленных запросов. Рекомендуется добавить индексы.")
+        
+        # Анализ топ медленных запросов
+        if self.slow_queries:
+            slow_by_type = defaultdict(list)
+            for q in self.slow_queries:
+                slow_by_type[f"{q.db_type}:{q.query_type}"].append(q.duration_ms)
+            
+            for query_type, times in slow_by_type.items():
+                avg_time = sum(times) / len(times)
+                if avg_time > 2000:
+                    suggestions.append(f"🔥 Критически медленный запрос {query_type}: среднее время {avg_time:.0f}ms")
+        
+        if not suggestions:
+            suggestions.append("✅ Производительность в норме")
+        
+        return suggestions
+    
+    def export_metrics(self, filepath: str = "performance_report.json"):
+        """Экспортирует метрики в файл"""
+        with self.lock:
+            report = {
+                "timestamp": datetime.now().isoformat(),
+                "current_metrics": self.get_current_metrics(),
+                "query_statistics": self.get_query_statistics(),
+                "slow_queries": [
+                    {
+                        "db_type": q.db_type,
+                        "query_type": q.query_type,
+                        "duration_ms": q.duration_ms,
+                        "timestamp": datetime.fromtimestamp(q.timestamp).isoformat()
+                    }
+                    for q in list(self.slow_queries)[-20:]  # Последние 20 медленных запросов
+                ],
+                "suggestions": self.get_optimization_suggestions()
+            }
+            
+            Path(filepath).write_text(json.dumps(report, indent=2, ensure_ascii=False))
+            logger.info(f"Performance report exported to {filepath}")
+            
+            return report
 
-    return wrapper
+
+# Глобальный экземпляр монитора
+performance_monitor = PerformanceMonitor()
