@@ -262,8 +262,11 @@ class RecommendationsEngine:
                 return 0.0
 
             # Morgan fingerprints
-            fp1 = AllChem.GetMorganFingerprintAsBitVect(mol1, 2, nBits=1024)
-            fp2 = AllChem.GetMorganFingerprintAsBitVect(mol2, 2, nBits=1024)
+            # Используем новый метод для устранения предупреждений
+            from rdkit.Chem import rdFingerprintGenerator
+            fpgen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=1024)
+            fp1 = fpgen.GetFingerprint(mol1)
+            fp2 = fpgen.GetFingerprint(mol2)
 
             # Tanimoto similarity
             return DataStructs.TanimotoSimilarity(fp1, fp2)
@@ -942,10 +945,10 @@ def render_recommendations_interface():
                     else:
                         st.warning("⚠️ Введите название сессии")
 
-            # Отображение результатов
-            if 'recommendation_results' in st.session_state and st.session_state.recommendation_results:
-                results = st.session_state.recommendation_results
-                target = st.session_state.target_compound
+                    # Отображение результатов
+                    if 'recommendation_results' in st.session_state and st.session_state.recommendation_results:
+                        results = st.session_state.recommendation_results
+                        target = st.session_state.target_compound
 
                         st.subheader(f"🎯 Рекомендации для: {target.get('name', 'Без названия')}")
 
@@ -1253,8 +1256,6 @@ def render_recommendations_interface():
             else:
                 st.warning("В выбранной базе данных нет соединений")
 
-        except Exception as e:
-            st.error(f"Ошибка загрузки данных: {str(e)}")
 
     # Информация о системе рекомендаций
     with st.expander("ℹ️ О системе рекомендаций"):
