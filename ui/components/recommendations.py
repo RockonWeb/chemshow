@@ -884,7 +884,7 @@ def render_recommendations_interface():
                         )
 
                     # Поиск рекомендаций
-                    if st.button("🔍 Найти похожие соединения", type="primary", width='stretch'):
+                    if st.button("🔍 Найти похожие соединения", type="primary", use_container_width=True):
                         with st.spinner("Ищу похожие соединения..."):
                             # Применяем фильтры к списку соединений перед поиском
                             filtered_compounds_list = engine._apply_filters(
@@ -1082,7 +1082,7 @@ def render_recommendations_interface():
                             format_func=lambda x: algorithm_options[x]
                         )
 
-                    if st.button("🎯 Выполнить кластеризацию", width='stretch'):
+                    if st.button("🎯 Выполнить кластеризацию", use_container_width=True):
                         with st.spinner("Выполняю кластеризацию..."):
                             cluster_results = engine.cluster_compounds(
                                 compounds_list, selected_db, n_clusters, selected_algorithm
