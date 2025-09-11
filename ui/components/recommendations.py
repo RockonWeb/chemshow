@@ -782,170 +782,170 @@ def render_recommendations_interface():
             # Fallback to relative import
             from ..config.settings import DATABASE_PATHS
 
-            db_path = DATABASE_PATHS[selected_db]
-            if os.path.exists(db_path):
-                try:
-                    conn = sqlite3.connect(db_path)
-                    cursor = conn.cursor()
+        db_path = DATABASE_PATHS[selected_db]
+        if os.path.exists(db_path):
+            try:
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
 
-                    # Проверяем структуру таблицы
-                    cursor.execute(f"PRAGMA table_info({selected_db})")
-                    columns = [row[1] for row in cursor.fetchall()]
+                # Проверяем структуру таблицы
+                cursor.execute(f"PRAGMA table_info({selected_db})")
+                columns = [row[1] for row in cursor.fetchall()]
 
-                    if not columns:
-                        st.error(f"❌ Ошибка: таблица {selected_db} пустая или не существует")
-                        return
-
-                    # Получаем все соединения (увеличен лимит для лучших рекомендаций)
-                    cursor.execute(f"SELECT * FROM {selected_db} LIMIT 1000")  # Увеличено для лучших рекомендаций
-                    compounds = cursor.fetchall()
-
-                    compounds_list = [dict(zip(columns, row)) for row in compounds]
-                    conn.close()
-
-                    if not compounds_list:
-                        st.warning(f"⚠️ В таблице {selected_db} нет данных")
-                        return
-
-                except sqlite3.Error as e:
-                    st.error(f"❌ Ошибка базы данных: {str(e)}")
-                    logger.error(f"Database error for {selected_db}: {e}")
+                if not columns:
+                    st.error(f"❌ Ошибка: таблица {selected_db} пустая или не существует")
                     return
-                except Exception as e:
-                    st.error(f"❌ Ошибка загрузки данных: {str(e)}")
-                    logger.error(f"Error loading data from {selected_db}: {e}")
+
+                # Получаем все соединения (увеличен лимит для лучших рекомендаций)
+                cursor.execute(f"SELECT * FROM {selected_db} LIMIT 1000")  # Увеличено для лучших рекомендаций
+                compounds = cursor.fetchall()
+
+                compounds_list = [dict(zip(columns, row)) for row in compounds]
+                conn.close()
+
+                if not compounds_list:
+                    st.warning(f"⚠️ В таблице {selected_db} нет данных")
                     return
-            else:
-                st.error(f"❌ Файл базы данных {db_path} не найден")
+
+            except sqlite3.Error as e:
+                st.error(f"❌ Ошибка базы данных: {str(e)}")
+                logger.error(f"Database error for {selected_db}: {e}")
                 return
+            except Exception as e:
+                st.error(f"❌ Ошибка загрузки данных: {str(e)}")
+                logger.error(f"Error loading data from {selected_db}: {e}")
+                return
+        else:
+            st.error(f"❌ Файл базы данных {db_path} не найден")
+            return
 
-            if compounds_list:
-                    st.success(f"✅ Загружено {len(compounds_list)} соединений из базы {database_options[selected_db]}")
+        if compounds_list:
+            st.success(f"✅ Загружено {len(compounds_list)} соединений из базы {database_options[selected_db]}")
 
-                    # Очищаем SMILES данные для всех соединений
-                    cleaned_compounds = []
-                    for compound in compounds_list:
-                        cleaned_compound = engine._clean_smiles_data(compound)
-                        cleaned_compounds.append(cleaned_compound)
-                    
-                    compounds_list = cleaned_compounds
+            # Очищаем SMILES данные для всех соединений
+            cleaned_compounds = []
+            for compound in compounds_list:
+                cleaned_compound = engine._clean_smiles_data(compound)
+                cleaned_compounds.append(cleaned_compound)
+            
+            compounds_list = cleaned_compounds
 
-                    # Выбор целевого соединения
-                    compound_names = [f"{c.get('name', 'Без названия')} (ID: {c.get('id', '—')})" for c in compounds_list]
-                    selected_compound_idx = st.selectbox(
-                        "Выберите соединение для поиска аналогов:",
-                        options=range(len(compounds_list)),
-                        format_func=lambda x: compound_names[x]
+            # Выбор целевого соединения
+            compound_names = [f"{c.get('name', 'Без названия')} (ID: {c.get('id', '—')})" for c in compounds_list]
+            selected_compound_idx = st.selectbox(
+                "Выберите соединение для поиска аналогов:",
+                options=range(len(compounds_list)),
+                format_func=lambda x: compound_names[x]
+            )
+
+            target_compound = compounds_list[selected_compound_idx]
+
+            # Параметры поиска
+            st.subheader("⚙️ Параметры поиска")
+
+            # Основные параметры
+            col1, col2 = st.columns(2)
+            with col1:
+                limit = st.slider("Количество рекомендаций:", 5, 50, 10)
+            with col2:
+                min_similarity = st.slider("Минимальная схожесть (%):", 0, 100, 30) / 100.0
+
+            # Продвинутые фильтры
+            with st.expander("🔍 Продвинутые фильтры"):
+                col3, col4 = st.columns(2)
+
+                with col3:
+                    # Фильтр по массе
+                    mass_range = st.slider(
+                        "Диапазон массы (Da):",
+                        0.0, 2000.0, (0.0, 2000.0),
+                        help="Ограничить поиск соединениями в указанном диапазоне масс"
                     )
 
-                    target_compound = compounds_list[selected_compound_idx]
+                with col4:
+                    # Фильтр по наличию SMILES
+                    smiles_only = st.checkbox(
+                        "Только с SMILES",
+                        help="Показывать только соединения с валидными SMILES для структурного анализа"
+                    )
 
-                    # Параметры поиска
-                    st.subheader("⚙️ Параметры поиска")
+                # Фильтр по ключевым словам
+                keyword_filter = st.text_input(
+                    "Ключевые слова в названии:",
+                    placeholder="например: glucose, dehydrogenase",
+                    help="Фильтровать по словам в названии (через запятую)"
+                )
 
-                    # Основные параметры
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        limit = st.slider("Количество рекомендаций:", 5, 50, 10)
-                    with col2:
-                        min_similarity = st.slider("Минимальная схожесть (%):", 0, 100, 30) / 100.0
+                # Фильтр по элементам в формуле
+                formula_elements = st.multiselect(
+                    "Обязательные элементы в формуле:",
+                    options=["C", "H", "O", "N", "P", "S", "Cl", "Br", "I", "F"],
+                    help="Соединения должны содержать выбранные химические элементы"
+                )
 
-                    # Продвинутые фильтры
-                    with st.expander("🔍 Продвинутые фильтры"):
-                        col3, col4 = st.columns(2)
+            # Поиск рекомендаций
+            if st.button("🔍 Найти похожие соединения", type="primary", use_container_width=True):
+                with st.spinner("Ищу похожие соединения..."):
+                    # Применяем фильтры к списку соединений перед поиском
+                    filtered_compounds_list = engine._apply_filters(
+                        compounds_list, mass_range, smiles_only, keyword_filter, formula_elements
+                    )
 
-                        with col3:
-                            # Фильтр по массе
-                            mass_range = st.slider(
-                                "Диапазон массы (Da):",
-                                0.0, 2000.0, (0.0, 2000.0),
-                                help="Ограничить поиск соединениями в указанном диапазоне масс"
-                            )
+                    if len(filtered_compounds_list) < 2:
+                        st.warning("⚠️ После применения фильтров осталось слишком мало соединений для поиска рекомендаций")
+                        return
 
-                        with col4:
-                            # Фильтр по наличию SMILES
-                            smiles_only = st.checkbox(
-                                "Только с SMILES",
-                                help="Показывать только соединения с валидными SMILES для структурного анализа"
-                            )
+                    similar_compounds = engine.find_similar_compounds(
+                        target_compound, selected_db, limit, filtered_compounds_list
+                    )
 
-                        # Фильтр по ключевым словам
-                        keyword_filter = st.text_input(
-                            "Ключевые слова в названии:",
-                            placeholder="например: glucose, dehydrogenase",
-                            help="Фильтровать по словам в названии (через запятую)"
-                        )
+                    # Фильтруем по минимальной схожести
+                    final_filtered_compounds = []
+                    for comp in similar_compounds:
+                        similarity = engine._calculate_similarity(target_compound, comp, selected_db)
+                        if similarity >= min_similarity:
+                            final_filtered_compounds.append((comp, similarity))
 
-                        # Фильтр по элементам в формуле
-                        formula_elements = st.multiselect(
-                            "Обязательные элементы в формуле:",
-                            options=["C", "H", "O", "N", "P", "S", "Cl", "Br", "I", "F"],
-                            help="Соединения должны содержать выбранные химические элементы"
-                        )
+                    st.session_state.recommendation_results = final_filtered_compounds
+                    st.session_state.target_compound = target_compound
+                    st.session_state.filters_applied = {
+                        'mass_range': mass_range,
+                        'smiles_only': smiles_only,
+                        'keyword_filter': keyword_filter,
+                        'formula_elements': formula_elements
+                    }
 
-                    # Поиск рекомендаций
-                    if st.button("🔍 Найти похожие соединения", type="primary", use_container_width=True):
-                        with st.spinner("Ищу похожие соединения..."):
-                            # Применяем фильтры к списку соединений перед поиском
-                            filtered_compounds_list = engine._apply_filters(
-                                compounds_list, mass_range, smiles_only, keyword_filter, formula_elements
-                            )
+                # Сохранение сессии
+                st.divider()
+                st.subheader("💾 Сохранение сессии")
 
-                            if len(filtered_compounds_list) < 2:
-                                st.warning("⚠️ После применения фильтров осталось слишком мало соединений для поиска рекомендаций")
-                                return
+                session_name = st.text_input(
+                    "Название сессии:",
+                    placeholder="Моя сессия рекомендаций",
+                    help="Введите название для сохранения текущей сессии"
+                )
 
-                            similar_compounds = engine.find_similar_compounds(
-                                target_compound, selected_db, limit, filtered_compounds_list
-                            )
+                if st.button("💾 Сохранить сессию", type="secondary", use_container_width=True):
+                    if session_name.strip():
+                        session_data = {
+                            'recommendations': st.session_state.recommendation_results,
+                            'target_compound': st.session_state.target_compound,
+                            'filters': st.session_state.filters_applied,
+                            'database_type': selected_db,
+                            'timestamp': pd.Timestamp.now().isoformat()
+                        }
 
-                            # Фильтруем по минимальной схожести
-                            final_filtered_compounds = []
-                            for comp in similar_compounds:
-                                similarity = engine._calculate_similarity(target_compound, comp, selected_db)
-                                if similarity >= min_similarity:
-                                    final_filtered_compounds.append((comp, similarity))
+                        if engine.save_recommendation_session(session_data, session_name.strip()):
+                            st.success(f"✅ Сессия '{session_name}' успешно сохранена!")
+                        else:
+                            st.error("❌ Ошибка сохранения сессии")
+                    else:
+                        st.warning("⚠️ Введите название сессии")
 
-                            st.session_state.recommendation_results = final_filtered_compounds
-                            st.session_state.target_compound = target_compound
-                            st.session_state.filters_applied = {
-                                'mass_range': mass_range,
-                                'smiles_only': smiles_only,
-                                'keyword_filter': keyword_filter,
-                                'formula_elements': formula_elements
-                            }
-
-                            # Сохранение сессии
-                            st.divider()
-                            st.subheader("💾 Сохранение сессии")
-
-                            session_name = st.text_input(
-                                "Название сессии:",
-                                placeholder="Моя сессия рекомендаций",
-                                help="Введите название для сохранения текущей сессии"
-                            )
-
-                            if st.button("💾 Сохранить сессию", type="secondary", use_container_width=True):
-                                if session_name.strip():
-                                    session_data = {
-                                        'recommendations': st.session_state.recommendation_results,
-                                        'target_compound': st.session_state.target_compound,
-                                        'filters': st.session_state.filters_applied,
-                                        'database_type': selected_db,
-                                        'timestamp': pd.Timestamp.now().isoformat()
-                                    }
-
-                                    if engine.save_recommendation_session(session_data, session_name.strip()):
-                                        st.success(f"✅ Сессия '{session_name}' успешно сохранена!")
-                                    else:
-                                        st.error("❌ Ошибка сохранения сессии")
-                                else:
-                                    st.warning("⚠️ Введите название сессии")
-
-                    # Отображение результатов
-                    if 'recommendation_results' in st.session_state and st.session_state.recommendation_results:
-                        results = st.session_state.recommendation_results
-                        target = st.session_state.target_compound
+            # Отображение результатов
+            if 'recommendation_results' in st.session_state and st.session_state.recommendation_results:
+                results = st.session_state.recommendation_results
+                target = st.session_state.target_compound
 
                         st.subheader(f"🎯 Рекомендации для: {target.get('name', 'Без названия')}")
 
